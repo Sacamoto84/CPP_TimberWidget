@@ -1,6 +1,7 @@
-﻿# TimberWidget
+# TimberWidget
 
 Arduino C++ библиотека для генерации строк `ui type=...`, совместимых с Android-протоколом виджетов из этого проекта.
+В качестве строкового движка используется библиотека [StringN](https://github.com/GyverLibs/StringN), чтобы не опираться на динамический `String`.
 
 ## Для чего она нужна
 
@@ -14,14 +15,17 @@ Arduino C++ библиотека для генерации строк `ui type=.
 
 ## Установка в Arduino IDE
 
-1. Скопируй папку `TimberWidget` в папку библиотек Arduino.
-2. Обычно это `Documents/Arduino/libraries/TimberWidget`.
-3. Перезапусти Arduino IDE.
-4. Подключи библиотеку:
+1. Установи зависимость `StringN`.
+2. Затем скопируй папку `TimberWidget` в папку библиотек Arduino.
+3. Обычно это `Documents/Arduino/libraries/TimberWidget`.
+4. Перезапусти Arduino IDE.
+5. Подключи библиотеку:
 
 ```cpp
 #include <TimberWidget.h>
 ```
+
+Если библиотеку ставить через менеджер библиотек или как отдельный git-репозиторий, в `library.properties` уже указан `depends=StringN`.
 
 ## Быстрый пример
 
@@ -33,13 +37,11 @@ using namespace TimberWidget;
 void setup() {
     Serial.begin(115200);
 
-    Serial.println(
-        Widgets::badge("READY")
-            .color("bg", "#1F7A1F")
-            .color("fg", "#FFFFFF")
-            .number("size", 14)
-            .build()
-    );
+    Widgets::badge("READY")
+        .color("bg", "#1F7A1F")
+        .color("fg", "#FFFFFF")
+        .number("size", 14)
+        .sendTo(Serial);
 }
 
 void loop() {
@@ -50,6 +52,72 @@ void loop() {
 
 ```text
 ui type=badge text="READY" bg=#1F7A1F fg=#FFFFFF size=14
+```
+
+## Что оптимизировано под микроконтроллер
+
+В библиотеке уже сделаны несколько практических оптимизаций под Arduino/ESP:
+
+- `WidgetBuilder` собирает команду в фиксированном буфере `StringN<512>`
+- quoted-параметры пишутся сразу в итоговый буфер команды
+- helper-функции `Format::...` тоже возвращают `StringN`, а не `String`
+- `sendTo(...)` отправляет уже собранную команду напрямую в `Print`
+- `sendDemoCommands(...)` отправляет встроенный каталог без создания лишних временных объектов
+
+Поэтому для устройства предпочтительнее такой стиль:
+
+```cpp
+Widgets::panel("Motor 1")
+    .param("value", "READY")
+    .param("subtitle", "24.3V 1.8A")
+    .color("accent", "#36C36B")
+    .sendTo(Serial);
+```
+
+А не такой:
+
+```cpp
+Serial.println(
+    Widgets::panel("Motor 1")
+        .param("value", "READY")
+        .build()
+);
+```
+
+Оба варианта рабочие, но `sendTo(...)` обычно экономнее по памяти.
+
+## Работа со StringN
+
+Внутри `TimberWidget` уже используются `StringN`, и ты можешь использовать их в своем коде напрямую:
+
+```cpp
+const String8 row1Columns[] = {String8("M1"), String8("READY"), String8("24.3")};
+const String8 row2Columns[] = {String8("M2"), String8("WAIT"), String8("22.9")};
+
+const String32 tableRows[] = {
+    Format::tableRow<32>(row1Columns, 3),
+    Format::tableRow<32>(row2Columns, 3)
+};
+
+Widgets::table(
+    "Name|State|Temp",
+    Format::join<96>(tableRows, 2, ';')
+).sendTo(Serial);
+```
+
+Также в библиотеке есть алиасы:
+
+- `TWText` -> `StringN<128>`
+- `TWData` -> `StringN<256>`
+- `TWCommand` -> `StringN<512>`
+
+Методы `param`, `raw`, `color`, `text`, `title` и `label` также принимают `F("...")`, так что константные строки можно держать во flash:
+
+```cpp
+Widgets::badge(F("READY"))
+    .color("bg", F("#1F7A1F"))
+    .color("fg", F("#FFFFFF"))
+    .sendTo(Serial);
 ```
 
 ## Основная идея API
@@ -77,7 +145,7 @@ Widgets::panel("Motor 1")
     .param("subtitle", "24.3V 1.8A")
     .color("accent", "#36C36B")
     .raw("icon", "info")
-    .build();
+    .sendTo(Serial);
 ```
 
 ## Полезные helper-функции

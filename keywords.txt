@@ -2,6 +2,9 @@ TimberWidget KEYWORD1
 WidgetBuilder KEYWORD1
 Widgets KEYWORD1
 Format KEYWORD1
+TWCommand LITERAL1
+TWText LITERAL1
+TWData LITERAL1
 build KEYWORD2
 sendTo KEYWORD2
 sendDemoCommands KEYWORD2
