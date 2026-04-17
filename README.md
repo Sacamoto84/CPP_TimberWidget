@@ -112,6 +112,92 @@ const char* lastCommand = ui.c_str();
 - `TimberWidgets` — простой прикладной API
 - `WidgetBuilder` — low-level API
 
+## Сырые Строки Протокола
+
+Если не хочется использовать `TimberWidgets` или `WidgetBuilder`, можно формировать строки вручную и отправлять их прямо на телефон.
+
+Общий формат такой:
+
+```text
+ui type=<widgetType> key=value key=value ...
+```
+
+Также поддерживается алиас:
+
+```text
+widget type=<widgetType> key=value key=value ...
+```
+
+Главные правила:
+
+- команда должна приходить завершенной строкой
+- `\n` достаточно, `\r\n` тоже подходит
+- аргументы передаются как `key=value`
+- значения с пробелами лучше брать в кавычки
+- списки обычно передаются через `|`, `,` или `;`
+
+Примеры:
+
+```text
+ui type=badge text="READY" bg=#1F7A1F fg=#FFFFFF size=14
+ui type=panel title="Motor 1" value=READY subtitle="24.3V 1.8A" accent=#36C36B icon=info
+ui type=table headers="Name|State|Temp" rows="M1|READY|24.3;M2|WAIT|22.9"
+ui type=modbus-frame direction=request preset=rtu data="01 03 00 10 00 02 C5 CE"
+```
+
+Подробная спецификация Android-стороны:
+
+- локально в проекте: [console/README.md](G:\Android_Terminal\app\src\main\java\com\example\terminalm3\console\README.md)
+- GitHub-версия: [Android Terminal Console README](https://github.com/Sacamoto84/Android_TerminalM3/blob/master/app/src/main/java/com/example/terminalm3/console/README.md)
+
+Ниже краткая шпаргалка именно по сырым строкам.
+
+### Сырые Строки: Базовые Виджеты
+
+| Виджет | Шаблон сырой строки | Пример |
+| --- | --- | --- |
+| `badge` | `ui type=badge text="..." bg=#... fg=#... size=N` | `ui type=badge text="READY" bg=#1F7A1F fg=#FFFFFF size=14` |
+| `dot` | `ui type=dot color=#... size=N label="..."` | `ui type=dot color=#00E676 size=16 label="Link active"` |
+| `image` | `ui type=image name=... size=N desc="..."` | `ui type=image name=info size=40 desc="Info icon"` |
+| `panel` | `ui type=panel title="..." value=... subtitle="..." accent=#... icon=...` | `ui type=panel title="Motor 1" value=READY subtitle="24.3V 1.8A" accent=#36C36B icon=info` |
+| `progress` | `ui type=progress label="..." value=N max=N fill=#... display="..."` | `ui type=progress label="Battery" value=72 max=100 fill=#36C36B display="72%"` |
+| `2col` | `ui type=2col left="..." right="..."` | `ui type=2col left="Voltage" right="24.3V"` |
+| `switch` | `ui type=switch label="..." state=on subtitle="..."` | `ui type=switch label="Pump enable" state=on subtitle="Remote mode"` |
+| `alarm-card` | `ui type=alarm-card title="..." message="..." severity=... time="..." icon=...` | `ui type=alarm-card title="Overheat" message="Motor 1 reached 92C" severity=critical time="12:41:03" icon=warn2` |
+
+### Сырые Строки: Телеметрия
+
+| Виджет | Шаблон сырой строки | Пример |
+| --- | --- | --- |
+| `sparkline` | `ui type=sparkline values="v1,v2,v3" label="..." color=#... display="..."` | `ui type=sparkline label="Temp" values="21,22,22,23,24,23,25" color=#36C36B display="25C"` |
+| `bar-group` | `ui type=bar-group labels="L1|L2" values="V1|V2" title="..." max=N` | `ui type=bar-group title="Motors" labels="M1|M2|M3" values="20|45|80" max=100` |
+| `gauge` | `ui type=gauge value=N label="..." max=N unit="..." color=#...` | `ui type=gauge label="CPU" value=72 max=100 unit="%" color=#36C36B` |
+| `battery` | `ui type=battery value=N label="..." max=N charging=true voltage=4.08` | `ui type=battery label="Battery A" value=78 max=100 charging=true voltage=4.08` |
+| `led-row` | `ui type=led-row title="..." items="NAME:STATE|NAME:STATE"` | `ui type=led-row title="Links" items="NET:#00E676|MQTT:#00E676|ERR:#FF5252|GPS:off"` |
+| `stats-card` | `ui type=stats-card title="..." value=... unit="..." delta="..." subtitle="..." accent=#...` | `ui type=stats-card title="RPM" value=1450 unit="rpm" delta="+12" subtitle="Motor 1" accent=#36C36B` |
+| `kv-grid` | `ui type=kv-grid title="..." items="K:V|K:V" columns=N` | `ui type=kv-grid title="Motor 1" items="Voltage:24.3V|Current:1.8A|Temp:62C|State:READY" columns=2` |
+| `pin-bank` | `ui type=pin-bank title="..." items="D1:on|D2:off|A0:adc"` | `ui type=pin-bank title="GPIO" items="D1:on|D2:off|D3:warn|A0:adc|PWM1:pwm"` |
+| `timeline` | `ui type=timeline title="..." items="12:01 Boot|12:03 WiFi"` | `ui type=timeline title="Boot" items="12:01 Boot|12:03 WiFi connected|12:05 MQTT online"` |
+| `line-chart` | `ui type=line-chart title="..." values="v1,v2,v3" labels="L1|L2|L3" color=#...` | `ui type=line-chart title="Voltage" values="24.1,24.2,24.0,24.3,24.4" labels="T1|T2|T3|T4|T5" color=#4FC3F7` |
+
+### Сырые Строки: Таблицы, Биты, Память
+
+| Виджет | Шаблон сырой строки | Пример |
+| --- | --- | --- |
+| `table` | `ui type=table headers="A|B|C" rows="1|2|3;4|5|6"` | `ui type=table headers="Name|State|Temp" rows="M1|READY|24.3;M2|WAIT|22.9"` |
+| `bitfield` | `ui type=bitfield label="..." value=0x.... bits=16` | `ui type=bitfield label="STATUS" value=0xB38F bits=16` |
+| `hex-dump` | `ui type=hex-dump title="..." data="AA BB CC" width=8 addr=0x1000 ascii=on` | `ui type=hex-dump title="RX Buffer" data="48 65 6C 6C 6F" width=8 addr=0x1000 ascii=on` |
+| `register-table` | `ui type=register-table title="..." rows="0000|0x1234|Status;0001|0x00A5|Flags"` | `ui type=register-table title="Holding Registers" rows="0000|0x1234|Status;0001|0x00A5|Flags;0002|0x03E8|Speed"` |
+
+### Сырые Строки: Кадры И Пакеты
+
+| Виджет | Шаблон сырой строки | Пример |
+| --- | --- | --- |
+| `modbus-frame` | `ui type=modbus-frame direction=request preset=rtu data="01 03 ..."` | `ui type=modbus-frame direction=request preset=rtu data="01 03 00 10 00 02 C5 CE"` |
+| `can-frame` | `ui type=can-frame id=0x123 data="11 22 33" ext=true title="..." direction=rx channel=can0` | `ui type=can-frame title="Motor CAN" direction=rx id=0x18FF50E5 ext=true data="11 22 33 44 55 66 77 88" channel=can0` |
+| `uart-frame` | `ui type=uart-frame title="..." direction=rx channel=UART1 baud=115200 data="AA 55 ..." fields="..."` | `ui type=uart-frame title="UART RX" direction=rx channel=UART1 baud=115200 data="AA 55 10 02 01 02 34"` |
+| `packet-frame` | `ui type=packet-frame title="..." protocol=CUSTOM direction=tx data="7E A1 ..." ascii=on` | `ui type=packet-frame title="Binary Packet" protocol=CUSTOM direction=tx data="7E A1 02 10 FF 55" ascii=on` |
+
 ## Методы `TimberWidgets`
 
 Поддержанные методы:
