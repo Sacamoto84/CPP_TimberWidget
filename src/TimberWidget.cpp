@@ -82,6 +82,12 @@ WidgetBuilder& WidgetBuilder::color(const char* key, const __FlashStringHelper* 
     return raw(key, value);
 }
 
+WidgetBuilder& WidgetBuilder::number(const char* key, int value) {
+    beginToken(key);
+    _command.add(value);
+    return *this;
+}
+
 WidgetBuilder& WidgetBuilder::number(const char* key, int32_t value) {
     beginToken(key);
     _command.add(value);
@@ -201,6 +207,430 @@ void WidgetBuilder::appendQuoted(const __FlashStringHelper* value) {
     _command.add('"');
     detail::addEscaped(_command, value);
     _command.add('"');
+}
+
+TimberWidgets::TimberWidgets(Print& output, bool crlf)
+    : _output(&output), _crlf(crlf) {}
+
+TimberWidgets& TimberWidgets::setOutput(Print& output) {
+    _output = &output;
+    return *this;
+}
+
+TimberWidgets& TimberWidgets::setCrlf(bool enabled) {
+    _crlf = enabled;
+    return *this;
+}
+
+size_t TimberWidgets::badge(const char* text, const char* bg, const char* fg, int size) {
+    begin("badge");
+    appendQuoted("text", text);
+    appendRaw("bg", bg);
+    appendRaw("fg", fg);
+    appendNumber("size", size);
+    return send();
+}
+
+size_t TimberWidgets::dot(const char* label, const char* color, int size) {
+    begin("dot");
+    appendRaw("color", color);
+    appendNumber("size", size);
+    appendQuoted("label", label);
+    return send();
+}
+
+size_t TimberWidgets::image(const char* name, int size, const char* desc) {
+    begin("image");
+    appendRaw("name", name);
+    appendNumber("size", size);
+    appendQuoted("desc", desc);
+    return send();
+}
+
+size_t TimberWidgets::panel(
+    const char* title,
+    const char* value,
+    const char* subtitle,
+    const char* accent,
+    const char* icon
+) {
+    begin("panel");
+    appendQuoted("title", title);
+    appendRaw("value", value);
+    appendQuoted("subtitle", subtitle);
+    appendRaw("accent", accent);
+    appendRaw("icon", icon);
+    return send();
+}
+
+size_t TimberWidgets::progress(
+    double value,
+    const char* label,
+    double maxValue,
+    const char* fill,
+    const char* display
+) {
+    begin("progress");
+    appendQuoted("label", label);
+    appendDecimal("value", value);
+    appendDecimal("max", maxValue);
+    appendRaw("fill", fill);
+    appendQuoted("display", display);
+    return send();
+}
+
+size_t TimberWidgets::twoCol(const char* left, const char* right) {
+    begin("2col");
+    appendQuoted("left", left);
+    appendQuoted("right", right);
+    return send();
+}
+
+size_t TimberWidgets::table(const char* headers, const char* rows) {
+    begin("table");
+    appendQuoted("headers", headers);
+    appendQuoted("rows", rows);
+    return send();
+}
+
+size_t TimberWidgets::switchWidget(const char* label, bool checked, const char* subtitle) {
+    begin("switch");
+    appendQuoted("label", label);
+    appendFlag("state", checked, true);
+    appendQuoted("subtitle", subtitle);
+    return send();
+}
+
+size_t TimberWidgets::alarmCard(
+    const char* title,
+    const char* message,
+    const char* severity,
+    const char* time,
+    const char* icon
+) {
+    begin("alarm-card");
+    appendQuoted("title", title);
+    appendQuoted("message", message);
+    appendRaw("severity", severity);
+    appendQuoted("time", time);
+    appendRaw("icon", icon);
+    return send();
+}
+
+size_t TimberWidgets::sparkline(
+    const char* values,
+    const char* label,
+    const char* color,
+    const char* display
+) {
+    begin("sparkline");
+    appendQuoted("label", label);
+    appendQuoted("values", values);
+    appendRaw("color", color);
+    appendQuoted("display", display);
+    return send();
+}
+
+size_t TimberWidgets::barGroup(
+    const char* labels,
+    const char* values,
+    const char* title,
+    uint32_t maxValue
+) {
+    begin("bar-group");
+    appendQuoted("title", title);
+    appendQuoted("labels", labels);
+    appendQuoted("values", values);
+    if (maxValue) appendNumber("max", maxValue);
+    return send();
+}
+
+size_t TimberWidgets::gauge(
+    double value,
+    const char* label,
+    double maxValue,
+    const char* unit,
+    const char* color
+) {
+    begin("gauge");
+    appendQuoted("label", label);
+    appendDecimal("value", value);
+    appendDecimal("max", maxValue);
+    appendQuoted("unit", unit);
+    appendRaw("color", color);
+    return send();
+}
+
+size_t TimberWidgets::battery(
+    double value,
+    const char* label,
+    double maxValue,
+    bool charging,
+    double voltage
+) {
+    begin("battery");
+    appendQuoted("label", label);
+    appendDecimal("value", value);
+    appendDecimal("max", maxValue);
+    appendFlag("charging", charging);
+    if (voltage >= 0.0) appendDecimal("voltage", voltage);
+    return send();
+}
+
+size_t TimberWidgets::ledRow(const char* items, const char* title) {
+    begin("led-row");
+    appendQuoted("title", title);
+    appendQuoted("items", items);
+    return send();
+}
+
+size_t TimberWidgets::statsCard(
+    const char* title,
+    const char* value,
+    const char* unit,
+    const char* delta,
+    const char* subtitle,
+    const char* accent
+) {
+    begin("stats-card");
+    appendQuoted("title", title);
+    appendQuoted("value", value);
+    appendQuoted("unit", unit);
+    appendQuoted("delta", delta);
+    appendQuoted("subtitle", subtitle);
+    appendRaw("accent", accent);
+    return send();
+}
+
+size_t TimberWidgets::kvGrid(const char* items, const char* title, uint32_t columns) {
+    begin("kv-grid");
+    appendQuoted("title", title);
+    appendQuoted("items", items);
+    if (columns) appendNumber("columns", columns);
+    return send();
+}
+
+size_t TimberWidgets::pinBank(const char* items, const char* title) {
+    begin("pin-bank");
+    appendQuoted("title", title);
+    appendQuoted("items", items);
+    return send();
+}
+
+size_t TimberWidgets::timeline(const char* items, const char* title) {
+    begin("timeline");
+    appendQuoted("title", title);
+    appendQuoted("items", items);
+    return send();
+}
+
+size_t TimberWidgets::lineChart(
+    const char* values,
+    const char* title,
+    const char* labels,
+    const char* color
+) {
+    begin("line-chart");
+    appendQuoted("title", title);
+    appendQuoted("values", values);
+    appendQuoted("labels", labels);
+    appendRaw("color", color);
+    return send();
+}
+
+size_t TimberWidgets::bitfield(uint32_t value, uint8_t bits, const char* label) {
+    begin("bitfield");
+    appendQuoted("label", label);
+    appendHex("value", value);
+    appendNumber("bits", bits);
+    return send();
+}
+
+size_t TimberWidgets::hexDump(
+    const uint8_t* data,
+    size_t length,
+    const char* title,
+    uint8_t width,
+    int32_t address,
+    bool ascii
+) {
+    begin("hex-dump");
+    appendQuoted("title", title);
+    appendBytes("data", data, length);
+    if (width) appendNumber("width", width);
+    if (address >= 0) appendHex("addr", static_cast<uint32_t>(address));
+    appendRaw("ascii", ascii ? "on" : "off");
+    return send();
+}
+
+size_t TimberWidgets::registerTable(const char* rows, const char* title) {
+    begin("register-table");
+    appendQuoted("title", title);
+    appendQuoted("rows", rows);
+    return send();
+}
+
+size_t TimberWidgets::modbusRtu(
+    const uint8_t* data,
+    size_t length,
+    const char* direction,
+    const char* title
+) {
+    begin("modbus-frame");
+    appendQuoted("title", title);
+    appendRaw("direction", direction);
+    appendRaw("preset", "rtu");
+    appendBytes("data", data, length);
+    return send();
+}
+
+size_t TimberWidgets::canFrame(
+    uint32_t id,
+    const uint8_t* data,
+    size_t length,
+    bool extended,
+    const char* title,
+    const char* direction,
+    const char* channel
+) {
+    begin("can-frame");
+    appendQuoted("title", title);
+    appendRaw("direction", direction);
+    appendHex("id", id, true, static_cast<uint8_t>(extended ? 8 : 3));
+    appendFlag("ext", extended);
+    appendBytes("data", data, length);
+    appendRaw("channel", channel);
+    return send();
+}
+
+size_t TimberWidgets::uartFrame(
+    const uint8_t* data,
+    size_t length,
+    const char* title,
+    const char* direction,
+    const char* channel,
+    uint32_t baud
+) {
+    begin("uart-frame");
+    appendQuoted("title", title);
+    appendRaw("direction", direction);
+    appendRaw("channel", channel);
+    if (baud) appendNumber("baud", baud);
+    appendBytes("data", data, length);
+    return send();
+}
+
+size_t TimberWidgets::packetFrame(
+    const uint8_t* data,
+    size_t length,
+    const char* protocol,
+    const char* title,
+    const char* direction,
+    bool ascii
+) {
+    begin("packet-frame");
+    appendQuoted("title", title);
+    appendRaw("protocol", protocol);
+    appendRaw("direction", direction);
+    appendBytes("data", data, length);
+    if (ascii) appendRaw("ascii", "on");
+    return send();
+}
+
+const char* TimberWidgets::c_str() const {
+    return _command.c_str();
+}
+
+void TimberWidgets::begin(const char* type) {
+    _command.clear();
+    _command.add("ui type=");
+    if (type) _command.add(type);
+}
+
+void TimberWidgets::appendRaw(const char* key, const char* value) {
+    if (!key || !*key || !value || !*value) return;
+    _command.add(' ');
+    _command.add(key);
+    _command.add('=');
+    _command.add(value);
+}
+
+void TimberWidgets::appendQuoted(const char* key, const char* value) {
+    if (!key || !*key || !value || !*value) return;
+    _command.add(' ');
+    _command.add(key);
+    _command.add('=');
+    _command.add('"');
+    detail::addEscaped(_command, value);
+    _command.add('"');
+}
+
+void TimberWidgets::appendNumber(const char* key, int value) {
+    if (!key || !*key) return;
+    _command.add(' ');
+    _command.add(key);
+    _command.add('=');
+    _command.add(value);
+}
+
+void TimberWidgets::appendNumber(const char* key, int32_t value) {
+    if (!key || !*key) return;
+    _command.add(' ');
+    _command.add(key);
+    _command.add('=');
+    _command.add(value);
+}
+
+void TimberWidgets::appendNumber(const char* key, uint32_t value) {
+    if (!key || !*key) return;
+    _command.add(' ');
+    _command.add(key);
+    _command.add('=');
+    _command.add(value);
+}
+
+void TimberWidgets::appendDecimal(const char* key, double value, uint8_t precision, bool trimZeros) {
+    if (!key || !*key) return;
+    _command.add(' ');
+    _command.add(key);
+    _command.add('=');
+    _command.add(Format::decimal(value, precision, trimZeros));
+}
+
+void TimberWidgets::appendFlag(const char* key, bool value, bool useOnOff) {
+    appendRaw(key, useOnOff ? (value ? "on" : "off") : (value ? "true" : "false"));
+}
+
+void TimberWidgets::appendHex(const char* key, uint32_t value, bool prefix, uint8_t width) {
+    if (!key || !*key) return;
+    _command.add(' ');
+    _command.add(key);
+    _command.add('=');
+    _command.add(Format::hex(value, prefix, width));
+}
+
+void TimberWidgets::appendBytes(const char* key, const uint8_t* data, size_t length, char separator) {
+    if (!key || !*key || !data || !length) return;
+    _command.add(' ');
+    _command.add(key);
+    _command.add('=');
+    _command.add('"');
+    for (size_t index = 0; index < length; ++index) {
+        if (index) _command.add(separator);
+        if (data[index] < 0x10) _command.add('0');
+        _command.add(static_cast<unsigned long>(data[index]), 16);
+    }
+    _command.add('"');
+}
+
+size_t TimberWidgets::send() {
+    if (_crlf) {
+        size_t written = _output->print(_command.c_str());
+        written += _output->print("\r\n");
+        return written;
+    }
+
+    return _output->println(_command.c_str());
 }
 
 size_t demoCommandCount() {

@@ -1,4 +1,4 @@
-#include <TimberWidget.h>
+﻿#include <TimberWidget.h>
 
 using namespace TimberWidget;
 
@@ -7,7 +7,7 @@ void setup() {
     delay(1500);
 
     // Отправляет весь каталог виджетов в Android-приложение,
-    // как будто они пришли от устройства по реальному каналу.
+    // как будто команды пришли от реального устройства.
     sendDemoCommands(Serial, false, 80);
 }
 

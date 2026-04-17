@@ -1,5 +1,6 @@
 TimberWidget KEYWORD1
 WidgetBuilder KEYWORD1
+TimberWidgets KEYWORD1
 Widgets KEYWORD1
 Format KEYWORD1
 TWCommand LITERAL1
