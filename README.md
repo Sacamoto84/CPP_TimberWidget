@@ -1,4 +1,4 @@
-# TimberWidget
+﻿# TimberWidget
 
 Arduino C++ библиотека для отправки команд `ui type=...`, совместимых с Android-протоколом виджетов этого проекта.
 Для строк используется [StringN](https://github.com/GyverLibs/StringN), а основной API теперь строится вокруг простого класса `TimberWidgets`: один объект, один метод, сразу отправка в `Print`.
@@ -57,6 +57,42 @@ ui type=panel title="Motor 1" value=READY subtitle="24.3V 1.8A" accent=#36C36B i
 ui type=progress label="Battery" value=72 max=100 fill=#36C36B display="72%"
 ui type=switch label="Pump enable" state=on subtitle="Remote mode"
 ```
+
+## Производительность
+
+Для сравнения `StringN` и `snprintf` добавлены два отдельных тестовых скетча:
+
+- `examples/StringPerfStudy/StringPerfStudy.ino` - короткий benchmark по базовым сценариям сборки строки
+- `examples/WidgetPerfConsole/WidgetPerfConsole.ino` - подробный benchmark по каждому виджету `TimberWidgets`
+- `RESEARCH_StringN_vs_snprintf.md` - краткое исследование с методикой и выводами
+
+Когда какой скетч использовать:
+
+- `StringPerfStudy` нужен, если хочешь быстро сравнить "чистую" стоимость формирования строки
+- `WidgetPerfConsole` нужен, если хочешь открыть `Serial Monitor` и увидеть, что лучше именно по каждому виджету
+
+`WidgetPerfConsole` сравнивает два подхода:
+
+- вызов готового метода `TimberWidgets`, который внутри использует `StringN`
+- ручную сборку той же сырой команды через `snprintf`
+
+В выводе по каждой строке будет:
+
+- имя виджета
+- число итераций
+- время на одну операцию для `TimberWidgets`
+- время на одну операцию для `snprintf`
+- победитель и примерный коэффициент ускорения
+
+Пример запуска:
+
+```cpp
+// Открой examples/WidgetPerfConsole/WidgetPerfConsole.ino
+// Загрузи скетч на плату
+// Открой Serial Monitor на 115200
+```
+
+Если хочешь понять, что лучше именно для твоего МК, запускай benchmark на той же плате и с теми же флагами сборки, что и в реальном проекте.
 
 ## Основной Класс `TimberWidgets`
 
