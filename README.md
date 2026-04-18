@@ -1,4 +1,4 @@
-﻿# TimberWidget
+# TimberWidget
 
 Arduino C++ библиотека для отправки команд `ui type=...`, совместимых с Android-протоколом виджетов этого проекта.
 Для строк используется [StringN](https://github.com/GyverLibs/StringN), а основной API теперь строится вокруг простого класса `TimberWidgets`: один объект, один метод, сразу отправка в `Print`.
@@ -39,7 +39,7 @@ TimberWidgets ui(Serial);
 void setup() {
     Serial.begin(115200);
 
-    ui.badge();
+    ui.badgeStyle("READY", "ok");
     ui.panel("Motor 1", "READY", "24.3V 1.8A", "#36C36B", "info");
     ui.progress(72, "Battery", 100, "#36C36B", "72%");
     ui.switchWidget("Pump enable", true, "Remote mode");
@@ -52,7 +52,7 @@ void loop() {
 Это отправит такие строки:
 
 ```text
-ui type=badge text="READY" bg=#1F7A1F fg=#FFFFFF size=14
+ui type=badge text="READY" st=ok
 ui type=panel title="Motor 1" value=READY subtitle="24.3V 1.8A" accent=#36C36B icon=info
 ui type=progress label="Battery" value=72 max=100 fill=#36C36B display="72%"
 ui type=switch label="Pump enable" state=on subtitle="Remote mode"
@@ -139,7 +139,7 @@ widget type=<widgetType> key=value key=value ...
 Примеры:
 
 ```text
-ui type=badge text="READY" bg=#1F7A1F fg=#FFFFFF size=14
+ui type=badge text="READY" st=ok
 ui type=panel title="Motor 1" value=READY subtitle="24.3V 1.8A" accent=#36C36B icon=info
 ui type=table headers="Name|State|Temp" rows="M1|READY|24.3;M2|WAIT|22.9"
 ui type=modbus-frame direction=request preset=rtu data="01 03 00 10 00 02 C5 CE"
@@ -152,11 +152,24 @@ ui type=modbus-frame direction=request preset=rtu data="01 03 00 10 00 02 C5 CE"
 
 Ниже краткая шпаргалка именно по сырым строкам.
 
+Для `badge` можно не передавать `size`, тогда Android сам возьмет размер `14`.
+Также у `badge` есть пресетный стиль через `st=...`, который на стороне Android подставляет готовые цвета фона и текста.
+
+Поддержанные стили `badge`:
+
+- `ok`, `ready`, `success`, `good`, `green`
+- `info`, `blue`
+- `warn`, `warning`, `amber`, `yellow`
+- `error`, `fail`, `danger`, `red`
+- `critical`, `alarm`
+- `neutral`, `default`, `gray`, `grey`
+- `dark`, `muted`
+
 ### Сырые Строки: Базовые Виджеты
 
 | Виджет | Шаблон сырой строки | Пример |
 | --- | --- | --- |
-| `badge` | `ui type=badge text="..." bg=#... fg=#... size=N` | `ui type=badge text="READY" bg=#1F7A1F fg=#FFFFFF size=14` |
+| `badge` | `ui type=badge text="..." st=ok` или `ui type=badge text="..." bg=#... fg=#... size=N` | `ui type=badge text="READY" st=ok` |
 | `dot` | `ui type=dot color=#... size=N label="..."` | `ui type=dot color=#00E676 size=16 label="Link active"` |
 | `image` | `ui type=image name=... size=N desc="..."` | `ui type=image name=info size=40 desc="Info icon"` |
 | `panel` | `ui type=panel title="..." value=... subtitle="..." accent=#... icon=...` | `ui type=panel title="Motor 1" value=READY subtitle="24.3V 1.8A" accent=#36C36B icon=info` |
@@ -203,6 +216,7 @@ ui type=modbus-frame direction=request preset=rtu data="01 03 00 10 00 02 C5 CE"
 Поддержанные методы:
 
 - `badge(text, bg, fg, size)`
+- `badgeStyle(text, style, size)`
 - `dot(label, color, size)`
 - `image(name, size, desc)`
 - `panel(title, value, subtitle, accent, icon)`
@@ -236,6 +250,7 @@ ui type=modbus-frame direction=request preset=rtu data="01 03 00 10 00 02 C5 CE"
 | Метод | Что рисует | Минимальный вызов |
 | --- | --- | --- |
 | `badge(...)` | Цветной бейдж с текстом | `ui.badge();` |
+| `badgeStyle(...)` | Бейдж по стилевому пресету Android | `ui.badgeStyle("READY", "ok");` |
 | `dot(...)` | Точку-индикатор с подписью | `ui.dot("WiFi");` |
 | `image(...)` | Иконку/картинку по имени | `ui.image("info");` |
 | `panel(...)` | Карточку с заголовком и значением | `ui.panel("Motor 1");` |
@@ -282,6 +297,7 @@ ui type=modbus-frame direction=request preset=rtu data="01 03 00 10 00 02 C5 CE"
 | Метод | Обязательные параметры | Примечание |
 | --- | --- | --- |
 | `badge` | ничего | Все параметры уже имеют defaults |
+| `badgeStyle` | ничего | Обычно достаточно `text + style`, размер можно не передавать |
 | `dot` | ничего | Можно вызвать просто `ui.dot()` |
 | `image` | ничего | По умолчанию имя `info` |
 | `panel` | `title` | Остальное можно не задавать |

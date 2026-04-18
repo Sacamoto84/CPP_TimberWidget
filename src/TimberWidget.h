@@ -308,11 +308,36 @@ private:
  */
 class TimberWidgets {
 public:
+    /**
+     * Создает фасад для отправки виджетов в указанный канал `Print`.
+     *
+     * Пример:
+     * `TimberWidgets ui(Serial);`
+     */
     explicit TimberWidgets(Print& output = Serial, bool crlf = false);
 
+    /**
+     * Меняет объект `Print`, в который будут отправляться команды.
+     *
+     * Пример:
+     * `ui.setOutput(Serial);`
+     */
     TimberWidgets& setOutput(Print& output);
+
+    /**
+     * Включает или выключает перевод строки `\r\n` вместо обычного `println()`.
+     *
+     * Пример:
+     * `ui.setCrlf(true);`
+     */
     TimberWidgets& setCrlf(bool enabled);
 
+    /**
+     * Отправляет badge с явным указанием цветов и размера текста.
+     *
+     * Пример:
+     * `ui.badge("READY", "#1F7A1F", "#FFFFFF", 14);`
+     */
     size_t badge(
         const char* text = "READY",
         const char* bg = "#1F7A1F",
@@ -320,18 +345,49 @@ public:
         int size = 14
     );
 
+    /**
+     * Отправляет badge по стилевому пресету Android.
+     * Подходит, когда хочется передать только текст и стиль, например `ok`, `warn`, `error`.
+     *
+     * Пример:
+     * `ui.badgeStyle("READY", "ok");`
+     */
+    size_t badgeStyle(
+        const char* text = "READY",
+        const char* style = "ok",
+        int size = 0
+    );
+
+    /**
+     * Отправляет круглый индикатор с подписью.
+     *
+     * Пример:
+     * `ui.dot("WiFi", "#00E676", 16);`
+     */
     size_t dot(
         const char* label = nullptr,
         const char* color = "#00E676",
         int size = 16
     );
 
+    /**
+     * Отправляет drawable-иконку по имени ресурса.
+     *
+     * Пример:
+     * `ui.image("info", 40, "Info icon");`
+     */
     size_t image(
         const char* name = "info",
         int size = 40,
         const char* desc = nullptr
     );
 
+    /**
+     * Отправляет карточку panel с заголовком, значением и подписью.
+     *
+     * Пример:
+     * `ui.panel("Motor 1", "READY", "24.3V 1.8A", "#36C36B", "info");`
+     */
     size_t panel(
         const char* title,
         const char* value = nullptr,
@@ -340,6 +396,12 @@ public:
         const char* icon = nullptr
     );
 
+    /**
+     * Отправляет progress с числом, подписью и необязательным текстом справа.
+     *
+     * Пример:
+     * `ui.progress(72, "Battery", 100, "#36C36B", "72%");`
+     */
     size_t progress(
         double value,
         const char* label = nullptr,
@@ -348,16 +410,41 @@ public:
         const char* display = nullptr
     );
 
+    /**
+     * Отправляет строку из двух колонок.
+     *
+     * Пример:
+     * `ui.twoCol("Voltage", "24.3V");`
+     */
     size_t twoCol(const char* left, const char* right);
 
+    /**
+     * Отправляет табличный виджет.
+     * `headers` передаются через `|`, строки в `rows` через `;`.
+     *
+     * Пример:
+     * `ui.table("Name|State|Temp", "M1|READY|24.3;M2|WAIT|22.9");`
+     */
     size_t table(const char* headers, const char* rows);
 
+    /**
+     * Отправляет визуальный переключатель `on/off`.
+     *
+     * Пример:
+     * `ui.switchWidget("Pump", true, "Remote mode");`
+     */
     size_t switchWidget(
         const char* label,
         bool checked,
         const char* subtitle = nullptr
     );
 
+    /**
+     * Отправляет карточку тревоги `alarm-card`.
+     *
+     * Пример:
+     * `ui.alarmCard("Overheat", "Motor 1: 92C", "critical", "12:41:03", "warn2");`
+     */
     size_t alarmCard(
         const char* title,
         const char* message = nullptr,
@@ -366,6 +453,13 @@ public:
         const char* icon = nullptr
     );
 
+    /**
+     * Отправляет мини-график `sparkline`.
+     * Значения нужно передавать строкой через запятую.
+     *
+     * Пример:
+     * `ui.sparkline("21,22,23,24", "Temp", "#36C36B", "24C");`
+     */
     size_t sparkline(
         const char* values,
         const char* label = nullptr,
@@ -373,6 +467,13 @@ public:
         const char* display = nullptr
     );
 
+    /**
+     * Отправляет набор столбиков `bar-group`.
+     * `labels` и `values` обычно передаются через `|`.
+     *
+     * Пример:
+     * `ui.barGroup("M1|M2|M3", "20|45|80", "Motors", 100);`
+     */
     size_t barGroup(
         const char* labels,
         const char* values,
@@ -380,6 +481,12 @@ public:
         uint32_t maxValue = 0
     );
 
+    /**
+     * Отправляет круговой индикатор `gauge`.
+     *
+     * Пример:
+     * `ui.gauge(72, "CPU", 100, "%", "#36C36B");`
+     */
     size_t gauge(
         double value,
         const char* label = nullptr,
@@ -388,6 +495,12 @@ public:
         const char* color = nullptr
     );
 
+    /**
+     * Отправляет виджет батареи.
+     *
+     * Пример:
+     * `ui.battery(78, "Battery A", 100, true, 4.08);`
+     */
     size_t battery(
         double value,
         const char* label = nullptr,
@@ -396,8 +509,20 @@ public:
         double voltage = -1.0
     );
 
+    /**
+     * Отправляет строку светодиодных индикаторов `led-row`.
+     *
+     * Пример:
+     * `ui.ledRow("NET:#00E676|MQTT:#00E676|ERR:#FF5252", "Links");`
+     */
     size_t ledRow(const char* items, const char* title = nullptr);
 
+    /**
+     * Отправляет крупную карточку метрики `stats-card`.
+     *
+     * Пример:
+     * `ui.statsCard("RPM", "1450", "rpm", "+12", "Motor 1", "#36C36B");`
+     */
     size_t statsCard(
         const char* title,
         const char* value,
@@ -407,16 +532,41 @@ public:
         const char* accent = nullptr
     );
 
+    /**
+     * Отправляет сетку `ключ:значение`.
+     *
+     * Пример:
+     * `ui.kvGrid("Voltage:24.3V|Current:1.8A|Temp:62C", "Motor 1", 2);`
+     */
     size_t kvGrid(
         const char* items,
         const char* title = nullptr,
         uint32_t columns = 2
     );
 
+    /**
+     * Отправляет банк пинов или GPIO-состояний.
+     *
+     * Пример:
+     * `ui.pinBank("D1:on|D2:off|A0:adc", "GPIO");`
+     */
     size_t pinBank(const char* items, const char* title = nullptr);
 
+    /**
+     * Отправляет timeline со списком событий.
+     *
+     * Пример:
+     * `ui.timeline("12:01 Boot|12:03 WiFi connected", "Boot");`
+     */
     size_t timeline(const char* items, const char* title = nullptr);
 
+    /**
+     * Отправляет линейный график `line-chart`.
+     * Значения передаются через запятую, подписи через `|`.
+     *
+     * Пример:
+     * `ui.lineChart("24.1,24.2,24.0", "Voltage", "T1|T2|T3", "#4FC3F7");`
+     */
     size_t lineChart(
         const char* values,
         const char* title = nullptr,
@@ -424,12 +574,24 @@ public:
         const char* color = nullptr
     );
 
+    /**
+     * Отправляет побитовое представление числа.
+     *
+     * Пример:
+     * `ui.bitfield(0xB38F, 16, "STATUS");`
+     */
     size_t bitfield(
         uint32_t value,
         uint8_t bits,
         const char* label = nullptr
     );
 
+    /**
+     * Отправляет hex-дамп массива байтов.
+     *
+     * Пример:
+     * `ui.hexDump(data, dataLength, "RX Buffer", 8, 0x1000, true);`
+     */
     size_t hexDump(
         const uint8_t* data,
         size_t length,
@@ -439,8 +601,21 @@ public:
         bool ascii = true
     );
 
+    /**
+     * Отправляет таблицу регистров.
+     * Формат `rows`: `ADDR|VALUE|DESC;ADDR|VALUE|DESC`.
+     *
+     * Пример:
+     * `ui.registerTable("0000|0x1234|Status;0001|0x00A5|Flags", "Holding Registers");`
+     */
     size_t registerTable(const char* rows, const char* title = nullptr);
 
+    /**
+     * Отправляет кадр Modbus RTU с `preset=rtu`.
+     *
+     * Пример:
+     * `ui.modbusRtu(frame, frameLength, "request", "Read Holding Registers");`
+     */
     size_t modbusRtu(
         const uint8_t* data,
         size_t length,
@@ -448,6 +623,12 @@ public:
         const char* title = nullptr
     );
 
+    /**
+     * Отправляет CAN-кадр.
+     *
+     * Пример:
+     * `ui.canFrame(0x18FF50E5, data, 8, true, "Motor CAN", "rx", "can0");`
+     */
     size_t canFrame(
         uint32_t id,
         const uint8_t* data = nullptr,
@@ -458,6 +639,12 @@ public:
         const char* channel = nullptr
     );
 
+    /**
+     * Отправляет UART-кадр.
+     *
+     * Пример:
+     * `ui.uartFrame(data, dataLength, "UART RX", "rx", "UART1", 115200);`
+     */
     size_t uartFrame(
         const uint8_t* data,
         size_t length,
@@ -467,6 +654,12 @@ public:
         uint32_t baud = 0
     );
 
+    /**
+     * Отправляет произвольный бинарный пакет `packet-frame`.
+     *
+     * Пример:
+     * `ui.packetFrame(data, dataLength, "CUSTOM", "Binary Packet", "tx", true);`
+     */
     size_t packetFrame(
         const uint8_t* data,
         size_t length,
@@ -476,6 +669,12 @@ public:
         bool ascii = false
     );
 
+    /**
+     * Возвращает последнюю собранную команду в текстовом виде.
+     *
+     * Пример:
+     * `const char* command = ui.c_str();`
+     */
     const char* c_str() const;
 
 private:
