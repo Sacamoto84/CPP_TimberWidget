@@ -98,7 +98,10 @@ inline StringN<Capacity> hex(uint32_t value, bool prefix = true, uint8_t width =
     StringN<Capacity> out;
     if (prefix) out.add("0x");
 
-    StringN<24> raw(value, 16);
+    // Не используем конструктор StringN(value, base), потому что на части платформ
+    // он конфликтует с другими перегрузками add(...).
+    StringN<24> raw;
+    raw.add(static_cast<unsigned long>(value), static_cast<uint8_t>(16));
     for (uint8_t i = raw.length(); i < width; ++i) {
         out.add('0');
     }
@@ -111,7 +114,10 @@ inline StringN<Capacity> hex(uint32_t value, bool prefix = true, uint8_t width =
  */
 template <uint16_t Capacity = 32>
 inline StringN<Capacity> decimal(double value, uint8_t precision = 2, bool trimZeros = true) {
-    StringN<Capacity> raw(value, precision);
+    // Явный add(...) здесь надежнее, чем конструктор StringN(value, precision),
+    // который на ESP32 может давать ambiguous overload.
+    StringN<Capacity> raw;
+    raw.add(value, precision);
     if (!trimZeros) return raw;
 
     uint16_t length = raw.length();
@@ -124,7 +130,11 @@ inline StringN<Capacity> decimal(double value, uint8_t precision = 2, bool trimZ
         --length;
     }
 
-    return StringN<Capacity>(text, length);
+    StringN<Capacity> out;
+    for (uint16_t index = 0; index < length; ++index) {
+        out.add(text[index]);
+    }
+    return out;
 }
 
 /**
