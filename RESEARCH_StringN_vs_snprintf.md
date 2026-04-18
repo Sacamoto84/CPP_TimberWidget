@@ -1,4 +1,4 @@
-# StringN vs snprintf
+﻿# StringN vs snprintf
 
 Короткое прикладное исследование для `TimberWidget`.
 
@@ -81,6 +81,76 @@
 - когда строка собирается из множества кусков
 - когда важна предсказуемость без скрытых расходов libc
 
+<a id="esp32-s3-real-benchmark"></a>
+## Реальный прогон на ESP32-S3
+
+Ниже сохранены реальные результаты теста, полученные на плате:
+
+- плата: `ESP32-S3-DevKitC-1-N8R2`
+- MCU: `ESP32-S3`, `240 MHz`
+- среда: `PlatformIO`
+- framework: `Arduino`
+- build mode: `release`
+- тестовый скетч: `examples/WidgetPerfConsole/WidgetPerfConsole.ino`
+
+Что измерялось:
+
+- только стоимость формирования строки команды
+- без реальной передачи в `Serial`
+- сравнение `TimberWidgets`/`StringN` против ручной сборки той же команды через `snprintf`
+
+Итог по прогону:
+
+- `Timber` победил в `21` виджете из `27`
+- `snprintf` победил в `6` виджетах
+- ничьих не было
+- checksum: `1622223808`
+- bytes sinked: `28728000`
+
+Таблица результатов:
+
+| Виджет | Итерации | Timber, ns/op | snprintf, ns/op | Победитель |
+| --- | ---: | ---: | ---: | --- |
+| `badge` | 12000 | 12783 | 17999 | `Timber x1.41` |
+| `badgeStyle` | 12000 | 8142 | 10124 | `Timber x1.24` |
+| `dot` | 12000 | 10400 | 15464 | `Timber x1.49` |
+| `image` | 12000 | 11155 | 15671 | `Timber x1.40` |
+| `panel` | 6000 | 17819 | 22556 | `Timber x1.27` |
+| `progress` | 12000 | 21726 | 25057 | `Timber x1.15` |
+| `twoCol` | 12000 | 9302 | 11661 | `Timber x1.25` |
+| `table` | 6000 | 18502 | 16948 | `snprintf x1.09` |
+| `switch` | 12000 | 14032 | 14899 | `Timber x1.06` |
+| `alarmCard` | 6000 | 20067 | 24443 | `Timber x1.22` |
+| `sparkline` | 6000 | 17457 | 21212 | `Timber x1.22` |
+| `barGroup` | 6000 | 15846 | 21428 | `Timber x1.35` |
+| `gauge` | 12000 | 19979 | 23254 | `Timber x1.16` |
+| `battery` | 12000 | 20033 | 20073 | `Timber x1.00` |
+| `ledRow` | 6000 | 17383 | 16411 | `snprintf x1.06` |
+| `statsCard` | 6000 | 19540 | 26156 | `Timber x1.34` |
+| `kvGrid` | 6000 | 20202 | 19657 | `snprintf x1.03` |
+| `pinBank` | 6000 | 15553 | 15540 | `snprintf x1.00` |
+| `timeline` | 6000 | 18293 | 16985 | `snprintf x1.08` |
+| `lineChart` | 6000 | 21111 | 22816 | `Timber x1.08` |
+| `bitfield` | 12000 | 13012 | 16599 | `Timber x1.28` |
+| `hexDump` | 1500 | 29044 | 72911 | `Timber x2.51` |
+| `registerTable` | 6000 | 22287 | 19747 | `snprintf x1.13` |
+| `modbusRtu` | 1500 | 22658 | 46397 | `Timber x2.05` |
+| `canFrame` | 1500 | 26942 | 45653 | `Timber x1.69` |
+| `uartFrame` | 1500 | 21412 | 41453 | `Timber x1.94` |
+| `packetFrame` | 1500 | 21613 | 38101 | `Timber x1.76` |
+
+Что видно по этим данным:
+
+- `StringN` особенно хорошо показывает себя на сложных и составных виджетах
+- самые сильные победы у `hexDump`, `modbusRtu`, `uartFrame`, `packetFrame`, `canFrame`
+- проигрыши `StringN` в `table`, `ledRow`, `kvGrid`, `pinBank`, `timeline`, `registerTable` в основном небольшие
+- для `battery` и `pinBank` разница практически нулевая
+
+Практический вывод именно по этому прогону:
+
+- для `TimberWidget` разумно оставить `StringN` основным способом сборки команд
+- `snprintf` можно рассматривать только как точечную внутреннюю оптимизацию для отдельных простых табличных методов
+- для frame/dump-виджетов `StringN` здесь явно предпочтительнее
 ## Практический вывод для TimberWidget
 
 Для `TimberWidget` я бы ориентировался так:

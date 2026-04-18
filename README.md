@@ -1,5 +1,10 @@
 ﻿# TimberWidget
 
+```
+lib_deps = 
+	https://github.com/Sacamoto84/CPP_TimberWidget#v0.0.7
+```
+
 Arduino C++ библиотека для отправки команд `ui type=...`, совместимых с Android-протоколом виджетов этого проекта.
 Для строк используется [StringN](https://github.com/GyverLibs/StringN), а основной API теперь строится вокруг простого класса `TimberWidgets`: один объект, один метод, сразу отправка в `Print`.
 
@@ -65,6 +70,7 @@ ui type=switch label="Pump enable" state=on subtitle="Remote mode"
 - `examples/StringPerfStudy/StringPerfStudy.ino` - короткий benchmark по базовым сценариям сборки строки
 - `examples/WidgetPerfConsole/WidgetPerfConsole.ino` - подробный benchmark по каждому виджету `TimberWidgets`
 - `RESEARCH_StringN_vs_snprintf.md` - краткое исследование с методикой и выводами
+- реальные цифры с `ESP32-S3`: [раздел `Реальный прогон на ESP32-S3`](./RESEARCH_StringN_vs_snprintf.md#esp32-s3-real-benchmark)
 
 Когда какой скетч использовать:
 
