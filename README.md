@@ -146,6 +146,7 @@ const char* lastCommand = ui.c_str();
 ```cpp
 ui.setTerminal(1);              // terminal по умолчанию для всех следующих отправок
 ui.message("Boot completed");   // уйдет в terminal 1
+ui.clearTerminal();             // очистит terminal 1
 ui.to(3).badgeStyle("READY", BadgeStyle::Ok); // только этот badge уйдет в terminal 3
 ui.message("Alarm!", 2);        // явный terminal только для одного raw-сообщения
 ```
@@ -154,6 +155,7 @@ ui.message("Alarm!", 2);        // явный terminal только для од�
 
 ```text
 @1 Boot completed
+@1 clear-terminal
 @3 ui type=badge text="READY" st=ok
 ```
 
@@ -223,6 +225,7 @@ ui.badgeStyle("FAIL", "danger");
 
 ```text
 ui type=<widgetType> key=value key=value ...
+clear-terminal
 ```
 
 Также поддерживается алиас:
@@ -243,6 +246,8 @@ widget type=<widgetType> key=value key=value ...
 Примеры:
 
 ```text
+@2 clear-terminal
+clear-terminal 3
 @3 ui type=badge text="READY" st=ok
 ui type=badge text="READY" st=ok
 ui type=panel title="Motor 1" value=READY subtitle="24.3V 1.8A" accent=#36C36B icon=info
@@ -324,6 +329,7 @@ ui type=modbus-frame direction=request preset=rtu data="01 03 00 10 00 02 C5 CE"
 - `terminal()`
 - `to(channel)`
 - `message(text[, channel])`
+- `clearTerminal([channel])`
 - `badge(text, bg, fg, size)`
 - `badgeStyle(text, BadgeStyle::..., size)`
 - `badgeStyle(text, "style", size)` - запасная raw-перегрузка
@@ -361,6 +367,7 @@ ui type=modbus-frame direction=request preset=rtu data="01 03 00 10 00 02 C5 CE"
 | --- | --- | --- |
 | `badge(...)` | Цветной бейдж с текстом | `ui.badge();` |
 | `badgeStyle(...)` | Бейдж по стилевому пресету Android | `ui.badgeStyle("READY", BadgeStyle::Ok);` |
+| `clearTerminal(...)` | Очистку terminal на Android | `ui.clearTerminal();` |
 | `dot(...)` | Точку-индикатор с подписью | `ui.dot("WiFi");` |
 | `image(...)` | Иконку/картинку по имени | `ui.image("info");` |
 | `panel(...)` | Карточку с заголовком и значением | `ui.panel("Motor 1");` |

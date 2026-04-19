@@ -13,6 +13,7 @@ setTerminal KEYWORD2
 terminal KEYWORD2
 to KEYWORD2
 message KEYWORD2
+clearTerminal KEYWORD2
 sendDemoCommands KEYWORD2
 demoCommand KEYWORD2
 badge KEYWORD2

@@ -9,6 +9,7 @@ void setup() {
     TimberWidgets ui(Serial);
     ui.setTerminal(1);
 
+    ui.clearTerminal();
     ui.message("Boot completed");
     ui.to(3).badgeStyle("READY", BadgeStyle::Ok);
 

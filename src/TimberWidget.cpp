@@ -286,6 +286,10 @@ size_t TimberWidgets::message(const __FlashStringHelper* text, int terminal) {
     return writeTerminalLine(*_output, resolveTerminal(terminal), text, _crlf);
 }
 
+size_t TimberWidgets::clearTerminal(int terminal) {
+    return writeTerminalLine(*_output, resolveTerminal(terminal), "clear-terminal", _crlf);
+}
+
 const char* TimberWidgets::c_str() const {
     return _command.c_str();
 }

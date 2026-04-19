@@ -421,6 +421,18 @@ public:
     size_t message(const __FlashStringHelper* text, int terminal = -1);
 
     /**
+     * Очищает terminal на стороне Android.
+     * Если `terminal` не задан, очищается terminal по умолчанию или terminal,
+     * который был временно выбран через `to(...)`.
+     *
+     * Пример:
+     * `ui.clearTerminal();`
+     * `ui.clearTerminal(2);`
+     * `ui.to(3).clearTerminal();`
+     */
+    size_t clearTerminal(int terminal = -1);
+
+    /**
      * Отправляет badge с явным указанием цветов и размера текста.
      *
      * Пример:
