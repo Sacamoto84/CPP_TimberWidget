@@ -3,6 +3,7 @@ WidgetBuilder KEYWORD1
 TimberWidgets KEYWORD1
 Widgets KEYWORD1
 Format KEYWORD1
+BadgeStyle KEYWORD1
 TWCommand LITERAL1
 TWText LITERAL1
 TWData LITERAL1
@@ -11,6 +12,7 @@ sendTo KEYWORD2
 sendDemoCommands KEYWORD2
 demoCommand KEYWORD2
 badge KEYWORD2
+badgeStyle KEYWORD2
 dot KEYWORD2
 image KEYWORD2
 panel KEYWORD2

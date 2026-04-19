@@ -1,10 +1,5 @@
 ﻿# TimberWidget
 
-```
-lib_deps = 
-	https://github.com/Sacamoto84/CPP_TimberWidget#v0.0.7
-```
-
 Arduino C++ библиотека для отправки команд `ui type=...`, совместимых с Android-протоколом виджетов этого проекта.
 Для строк используется [StringN](https://github.com/GyverLibs/StringN), а основной API теперь строится вокруг простого класса `TimberWidgets`: один объект, один метод, сразу отправка в `Print`.
 
@@ -21,16 +16,14 @@ Arduino C++ библиотека для отправки команд `ui type=.
 
 ## Установка
 
-1. Установи зависимость `StringN`
-2. Положи папку `TimberWidget` в `Documents/Arduino/libraries/TimberWidget`
-3. Перезапусти Arduino IDE
-4. Подключи библиотеку:
+```
+lib_deps = 
+	https://github.com/Sacamoto84/CPP_TimberWidget#v0.0.7
+```
 
 ```cpp
 #include <TimberWidget.h>
 ```
-
-В `library.properties` уже указан `depends=StringN`.
 
 ## Быстрый Старт
 
@@ -44,7 +37,7 @@ TimberWidgets ui(Serial);
 void setup() {
     Serial.begin(115200);
 
-    ui.badgeStyle("READY", "ok");
+    ui.badgeStyle("READY", BadgeStyle::Ok);
     ui.panel("Motor 1", "READY", "24.3V 1.8A", "#36C36B", "info");
     ui.progress(72, "Battery", 100, "#36C36B", "72%");
     ui.switchWidget("Pump enable", true, "Remote mode");
@@ -128,6 +121,37 @@ ui.setCrlf(true);
 
 ```cpp
 const char* lastCommand = ui.c_str();
+```
+
+## Enum Для `badgeStyle`
+
+Для `badge`-пресетов теперь есть типобезопасный enum `BadgeStyle`.
+Это основной рекомендуемый способ, потому что не нужно помнить строковые имена стилей и нельзя ошибиться в буквах.
+
+Пример:
+
+```cpp
+ui.badgeStyle("READY", BadgeStyle::Ok);
+ui.badgeStyle("INFO", BadgeStyle::Info);
+ui.badgeStyle("FAIL", BadgeStyle::Error);
+```
+
+Поддержанные значения enum:
+
+- `BadgeStyle::Ok`
+- `BadgeStyle::Info`
+- `BadgeStyle::Warn`
+- `BadgeStyle::Error`
+- `BadgeStyle::Critical`
+- `BadgeStyle::Neutral`
+- `BadgeStyle::Dark`
+
+Если по какой-то причине нужен именно raw-стиль Android или alias, остается запасная перегрузка:
+
+```cpp
+ui.badgeStyle("READY", "ok");
+ui.badgeStyle("WAIT", "warning");
+ui.badgeStyle("FAIL", "danger");
 ```
 
 ## Когда Использовать `TimberWidgets`
@@ -258,7 +282,8 @@ ui type=modbus-frame direction=request preset=rtu data="01 03 00 10 00 02 C5 CE"
 Поддержанные методы:
 
 - `badge(text, bg, fg, size)`
-- `badgeStyle(text, style, size)`
+- `badgeStyle(text, BadgeStyle::..., size)`
+- `badgeStyle(text, "style", size)` - запасная raw-перегрузка
 - `dot(label, color, size)`
 - `image(name, size, desc)`
 - `panel(title, value, subtitle, accent, icon)`
@@ -292,7 +317,7 @@ ui type=modbus-frame direction=request preset=rtu data="01 03 00 10 00 02 C5 CE"
 | Метод | Что рисует | Минимальный вызов |
 | --- | --- | --- |
 | `badge(...)` | Цветной бейдж с текстом | `ui.badge();` |
-| `badgeStyle(...)` | Бейдж по стилевому пресету Android | `ui.badgeStyle("READY", "ok");` |
+| `badgeStyle(...)` | Бейдж по стилевому пресету Android | `ui.badgeStyle("READY", BadgeStyle::Ok);` |
 | `dot(...)` | Точку-индикатор с подписью | `ui.dot("WiFi");` |
 | `image(...)` | Иконку/картинку по имени | `ui.image("info");` |
 | `panel(...)` | Карточку с заголовком и значением | `ui.panel("Motor 1");` |
@@ -339,7 +364,7 @@ ui type=modbus-frame direction=request preset=rtu data="01 03 00 10 00 02 C5 CE"
 | Метод | Обязательные параметры | Примечание |
 | --- | --- | --- |
 | `badge` | ничего | Все параметры уже имеют defaults |
-| `badgeStyle` | ничего | Обычно достаточно `text + style`, размер можно не передавать |
+| `badgeStyle` | ничего | Рекомендуется передавать `text + BadgeStyle`, raw-строка нужна редко |
 | `dot` | ничего | Можно вызвать просто `ui.dot()` |
 | `image` | ничего | По умолчанию имя `info` |
 | `panel` | `title` | Остальное можно не задавать |

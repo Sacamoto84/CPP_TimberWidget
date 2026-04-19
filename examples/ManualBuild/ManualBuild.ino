@@ -8,7 +8,7 @@ void setup() {
 
     TimberWidgets ui(Serial);
 
-    ui.badgeStyle("READY", "ok");
+    ui.badgeStyle("READY", BadgeStyle::Ok);
     ui.panel("Motor 1", "READY", "24.3V 1.8A", "#36C36B", "info");
     ui.progress(72, "Battery", 100, "#36C36B", "72%");
     ui.switchWidget("Pump enable", true, "Remote mode");

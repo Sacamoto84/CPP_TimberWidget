@@ -9,6 +9,39 @@ using TWCommand = StringN<512>;
 using TWText = StringN<128>;
 using TWData = StringN<256>;
 
+/**
+ * Набор канонических стилевых пресетов для badge на стороне Android.
+ *
+ * Соответствие Android-стилям:
+ * - `BadgeStyle::Ok` -> `ok / ready / success / good / green`
+ * - `BadgeStyle::Info` -> `info / blue`
+ * - `BadgeStyle::Warn` -> `warn / warning / amber / yellow`
+ * - `BadgeStyle::Error` -> `error / fail / danger / red`
+ * - `BadgeStyle::Critical` -> `critical / alarm`
+ * - `BadgeStyle::Neutral` -> `neutral / default / gray / grey`
+ * - `BadgeStyle::Dark` -> `dark / muted`
+ *
+ * Пример:
+ * `ui.badgeStyle("READY", BadgeStyle::Ok);`
+ */
+enum class BadgeStyle : uint8_t {
+    Ok,
+    Info,
+    Warn,
+    Error,
+    Critical,
+    Neutral,
+    Dark
+};
+
+/**
+ * Возвращает строковый код пресета Android для enum-стиля badge.
+ *
+ * Пример:
+ * `const char* style = badgeStyleName(BadgeStyle::Warn);`
+ */
+const char* badgeStyleName(BadgeStyle style);
+
 namespace detail {
 
 template <uint16_t Capacity>
@@ -356,15 +389,30 @@ public:
     );
 
     /**
-     * Отправляет badge по стилевому пресету Android.
-     * Подходит, когда хочется передать только текст и стиль, например `ok`, `warn`, `error`.
+     * Отправляет badge по стилевому пресету Android через типобезопасный enum.
+     * Это основной рекомендуемый вариант, потому что не нужно помнить строковые имена
+     * всех поддержанных стилей.
+     *
+     * Пример:
+     * `ui.badgeStyle("READY", BadgeStyle::Ok);`
+     */
+    size_t badgeStyle(
+        const char* text = "READY",
+        BadgeStyle style = BadgeStyle::Ok,
+        int size = 0
+    );
+
+    /**
+     * Отправляет badge по сырому строковому имени пресета Android.
+     * Нужен как совместимый и запасной вариант, если хочется явно передать
+     * строку вроде `ok`, `warn`, `error` или один из alias Android.
      *
      * Пример:
      * `ui.badgeStyle("READY", "ok");`
      */
     size_t badgeStyle(
-        const char* text = "READY",
-        const char* style = "ok",
+        const char* text,
+        const char* style,
         int size = 0
     );
 
