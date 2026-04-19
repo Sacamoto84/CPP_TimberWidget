@@ -32,6 +32,47 @@ const char* const kDemoCommands[] = {
     "ui type=packet-frame title=\"Binary Packet\" protocol=CUSTOM direction=tx data=\"7E A1 02 10 FF 55\" ascii=on"
 };
 
+uint8_t normalizeTerminalChannel(int channel) {
+    if (channel < 0) return 0;
+    if (channel > 3) return 3;
+    return static_cast<uint8_t>(channel);
+}
+
+size_t writeTerminalPrefix(Print& output, uint8_t channel) {
+    if (channel == 0) return 0;
+
+    size_t written = output.write('@');
+    written += output.print(channel);
+    written += output.write(' ');
+    return written;
+}
+
+size_t writeTerminalLine(Print& output, uint8_t channel, const char* text, bool crlf) {
+    size_t written = writeTerminalPrefix(output, channel);
+    written += output.print(text ? text : "");
+
+    if (crlf) {
+        written += output.print("\r\n");
+    } else {
+        written += output.println();
+    }
+
+    return written;
+}
+
+size_t writeTerminalLine(Print& output, uint8_t channel, const __FlashStringHelper* text, bool crlf) {
+    size_t written = writeTerminalPrefix(output, channel);
+    written += output.print(text);
+
+    if (crlf) {
+        written += output.print("\r\n");
+    } else {
+        written += output.println();
+    }
+
+    return written;
+}
+
 }  // namespace
 
 WidgetBuilder::WidgetBuilder(const char* type, const char* commandName) {
@@ -156,6 +197,11 @@ WidgetBuilder& WidgetBuilder::label(const __FlashStringHelper* value) {
     return param("label", value);
 }
 
+WidgetBuilder& WidgetBuilder::terminal(uint8_t channel) {
+    _terminal = normalizeTerminalChannel(channel);
+    return *this;
+}
+
 const TWCommand& WidgetBuilder::build() const {
     return _command;
 }
@@ -178,16 +224,12 @@ bool WidgetBuilder::isFull() const {
 
 size_t WidgetBuilder::sendTo(Print& output, bool newline, bool crlf) const {
     if (!newline) {
-        return output.print(_command.c_str());
-    }
-
-    if (crlf) {
-        size_t written = output.print(_command.c_str());
-        written += output.print("\r\n");
+        size_t written = writeTerminalPrefix(output, normalizeTerminalChannel(_terminal));
+        written += output.print(_command.c_str());
         return written;
     }
 
-    return output.println(_command.c_str());
+    return writeTerminalLine(output, normalizeTerminalChannel(_terminal), _command.c_str(), crlf);
 }
 
 void WidgetBuilder::beginToken(const char* key) {
@@ -220,6 +262,28 @@ TimberWidgets& TimberWidgets::setOutput(Print& output) {
 TimberWidgets& TimberWidgets::setCrlf(bool enabled) {
     _crlf = enabled;
     return *this;
+}
+
+TimberWidgets& TimberWidgets::setTerminal(uint8_t channel) {
+    _defaultTerminal = normalizeTerminalChannel(channel);
+    return *this;
+}
+
+uint8_t TimberWidgets::terminal() const {
+    return _defaultTerminal;
+}
+
+TimberWidgets& TimberWidgets::to(uint8_t channel) {
+    _nextTerminalOverride = normalizeTerminalChannel(channel);
+    return *this;
+}
+
+size_t TimberWidgets::message(const char* text, int terminal) {
+    return writeTerminalLine(*_output, resolveTerminal(terminal), text, _crlf);
+}
+
+size_t TimberWidgets::message(const __FlashStringHelper* text, int terminal) {
+    return writeTerminalLine(*_output, resolveTerminal(terminal), text, _crlf);
 }
 
 const char* TimberWidgets::c_str() const {
@@ -308,14 +372,23 @@ void TimberWidgets::appendBytes(const char* key, const uint8_t* data, size_t len
     _command.add('"');
 }
 
-size_t TimberWidgets::send() {
-    if (_crlf) {
-        size_t written = _output->print(_command.c_str());
-        written += _output->print("\r\n");
-        return written;
+uint8_t TimberWidgets::resolveTerminal(int terminal) {
+    uint8_t resolved = _defaultTerminal;
+
+    if (_nextTerminalOverride >= 0) {
+        resolved = normalizeTerminalChannel(_nextTerminalOverride);
+        _nextTerminalOverride = -1;
     }
 
-    return _output->println(_command.c_str());
+    if (terminal >= 0) {
+        resolved = normalizeTerminalChannel(terminal);
+    }
+
+    return resolved;
+}
+
+size_t TimberWidgets::send() {
+    return writeTerminalLine(*_output, resolveTerminal(), _command.c_str(), _crlf);
 }
 
 size_t demoCommandCount() {

@@ -319,6 +319,7 @@ public:
     WidgetBuilder& title(const __FlashStringHelper* value);
     WidgetBuilder& label(const char* value);
     WidgetBuilder& label(const __FlashStringHelper* value);
+    WidgetBuilder& terminal(uint8_t channel);
 
     const TWCommand& build() const;
     const char* c_str() const;
@@ -330,6 +331,7 @@ public:
 
 private:
     TWCommand _command;
+    int16_t _terminal = -1;
 
     void beginToken(const char* key);
     void appendQuoted(const char* value);
@@ -374,6 +376,49 @@ public:
      * `ui.setCrlf(true);`
      */
     TimberWidgets& setCrlf(bool enabled);
+
+    /**
+     * Выбирает terminal по умолчанию для всех следующих отправок.
+     *
+     * Пример:
+     * `ui.setTerminal(1);`
+     */
+    TimberWidgets& setTerminal(uint8_t channel);
+
+    /**
+     * Возвращает terminal по умолчанию, который сейчас выбран для отправки.
+     *
+     * Пример:
+     * `uint8_t terminal = ui.terminal();`
+     */
+    uint8_t terminal() const;
+
+    /**
+     * Временно переопределяет terminal только для следующей отправки.
+     * Это удобный RTT-подобный способ отправить один конкретный виджет в другой канал.
+     *
+     * Пример:
+     * `ui.to(3).badgeStyle("READY", BadgeStyle::Ok);`
+     */
+    TimberWidgets& to(uint8_t channel);
+
+    /**
+     * Отправляет обычную текстовую строку в выбранный terminal.
+     * Если `terminal` не задан, используется terminal по умолчанию.
+     *
+     * Пример:
+     * `ui.message("Boot completed");`
+     * `ui.message("Alarm!", 2);`
+     */
+    size_t message(const char* text, int terminal = -1);
+
+    /**
+     * Отправляет обычную F()-строку в выбранный terminal.
+     *
+     * Пример:
+     * `ui.message(F("Boot completed"));`
+     */
+    size_t message(const __FlashStringHelper* text, int terminal = -1);
 
     /**
      * Отправляет badge с явным указанием цветов и размера текста.
@@ -738,6 +783,8 @@ public:
 private:
     Print* _output;
     bool _crlf;
+    uint8_t _defaultTerminal = 0;
+    int16_t _nextTerminalOverride = -1;
     TWCommand _command;
 
     void begin(const char* type);
@@ -750,6 +797,7 @@ private:
     void appendFlag(const char* key, bool value, bool useOnOff = false);
     void appendHex(const char* key, uint32_t value, bool prefix = true, uint8_t width = 0);
     void appendBytes(const char* key, const uint8_t* data, size_t length, char separator = ' ');
+    uint8_t resolveTerminal(int terminal = -1);
     size_t send();
 };
 

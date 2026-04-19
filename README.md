@@ -37,7 +37,9 @@ TimberWidgets ui(Serial);
 void setup() {
     Serial.begin(115200);
 
-    ui.badgeStyle("READY", BadgeStyle::Ok);
+    ui.setTerminal(1);
+    ui.message("Boot completed");
+    ui.to(3).badgeStyle("READY", BadgeStyle::Ok);
     ui.panel("Motor 1", "READY", "24.3V 1.8A", "#36C36B", "info");
     ui.progress(72, "Battery", 100, "#36C36B", "72%");
     ui.switchWidget("Pump enable", true, "Remote mode");
@@ -50,10 +52,11 @@ void loop() {
 Это отправит такие строки:
 
 ```text
-ui type=badge text="READY" st=ok
-ui type=panel title="Motor 1" value=READY subtitle="24.3V 1.8A" accent=#36C36B icon=info
-ui type=progress label="Battery" value=72 max=100 fill=#36C36B display="72%"
-ui type=switch label="Pump enable" state=on subtitle="Remote mode"
+@1 Boot completed
+@3 ui type=badge text="READY" st=ok
+@1 ui type=panel title="Motor 1" value=READY subtitle="24.3V 1.8A" accent=#36C36B icon=info
+@1 ui type=progress label="Battery" value=72 max=100 fill=#36C36B display="72%"
+@1 ui type=switch label="Pump enable" state=on subtitle="Remote mode"
 ```
 
 ## Производительность
@@ -115,6 +118,7 @@ TimberWidgets ui(Serial);
 ```cpp
 ui.setOutput(Serial);
 ui.setCrlf(true);
+ui.setTerminal(1);
 ```
 
 Если нужен доступ к последней собранной строке:
@@ -122,6 +126,39 @@ ui.setCrlf(true);
 ```cpp
 const char* lastCommand = ui.c_str();
 ```
+
+## Терминалы И Каналы
+
+Для многоканальной консоли Android теперь поддерживается RTT-подобная модель terminal/channel.
+
+Что это дает:
+
+- можно держать `4` логических терминала
+- обычный текст и виджеты можно разводить по разным каналам
+- на Android первая кнопка `ALL` показывает общую ленту всех terminal `0..3`
+- после запуска Android сразу открывает вкладку `ALL`, чтобы был виден весь поток целиком
+- отдельные кнопки `0..3` открывают конкретные terminal
+- на кнопке `ALL` Android показывает badge с числом новых элементов во всей общей ленте
+- на кнопках `0..3` Android показывает badge с числом новых сообщений в этом terminal
+
+Основные методы:
+
+```cpp
+ui.setTerminal(1);              // terminal по умолчанию для всех следующих отправок
+ui.message("Boot completed");   // уйдет в terminal 1
+ui.to(3).badgeStyle("READY", BadgeStyle::Ok); // только этот badge уйдет в terminal 3
+ui.message("Alarm!", 2);        // явный terminal только для одного raw-сообщения
+```
+
+Как это кодируется в сырой строке:
+
+```text
+@1 Boot completed
+@3 ui type=badge text="READY" st=ok
+```
+
+То есть transport-prefix `@N ` ставится в начало строки и говорит Android, в какой terminal ее положить.
+Если prefix отсутствует, строка попадает в terminal `0`.
 
 ## Enum Для `badgeStyle`
 
@@ -198,6 +235,7 @@ widget type=<widgetType> key=value key=value ...
 
 - команда должна приходить завершенной строкой
 - `\n` достаточно, `\r\n` тоже подходит
+- для выбора terminal можно добавить transport-prefix `@N ` в начало строки
 - аргументы передаются как `key=value`
 - значения с пробелами лучше брать в кавычки
 - списки обычно передаются через `|`, `,` или `;`
@@ -205,6 +243,7 @@ widget type=<widgetType> key=value key=value ...
 Примеры:
 
 ```text
+@3 ui type=badge text="READY" st=ok
 ui type=badge text="READY" st=ok
 ui type=panel title="Motor 1" value=READY subtitle="24.3V 1.8A" accent=#36C36B icon=info
 ui type=table headers="Name|State|Temp" rows="M1|READY|24.3;M2|WAIT|22.9"
@@ -281,6 +320,10 @@ ui type=modbus-frame direction=request preset=rtu data="01 03 00 10 00 02 C5 CE"
 
 Поддержанные методы:
 
+- `setTerminal(channel)`
+- `terminal()`
+- `to(channel)`
+- `message(text[, channel])`
 - `badge(text, bg, fg, size)`
 - `badgeStyle(text, BadgeStyle::..., size)`
 - `badgeStyle(text, "style", size)` - запасная raw-перегрузка

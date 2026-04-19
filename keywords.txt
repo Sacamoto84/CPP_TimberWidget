@@ -9,6 +9,10 @@ TWText LITERAL1
 TWData LITERAL1
 build KEYWORD2
 sendTo KEYWORD2
+setTerminal KEYWORD2
+terminal KEYWORD2
+to KEYWORD2
+message KEYWORD2
 sendDemoCommands KEYWORD2
 demoCommand KEYWORD2
 badge KEYWORD2
