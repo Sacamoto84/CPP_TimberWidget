@@ -169,10 +169,10 @@ void printCaseSummary(const BenchCase& benchCase, uint32_t timberUs, uint32_t sn
 
     if (timberUs < snprintfUs) {
         Serial.print(F("Timber x"));
-        Serial.println((double)snprintfUs / (double)timberUs, 2);
+        Serial.println((float)snprintfUs / (float)timberUs, 2);
     } else if (snprintfUs < timberUs) {
         Serial.print(F("snprintf x"));
-        Serial.println((double)timberUs / (double)snprintfUs, 2);
+        Serial.println((float)timberUs / (float)snprintfUs, 2);
     } else {
         Serial.println(F("tie"));
     }

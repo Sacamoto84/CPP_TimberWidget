@@ -146,7 +146,7 @@ inline StringN<Capacity> hex(uint32_t value, bool prefix = true, uint8_t width =
  * Форматирует число с плавающей точкой.
  */
 template <uint16_t Capacity = 32>
-inline StringN<Capacity> decimal(double value, uint8_t precision = 2, bool trimZeros = true) {
+inline StringN<Capacity> decimal(float value, uint8_t precision = 2, bool trimZeros = true) {
     // Явный add(...) здесь надежнее, чем конструктор StringN(value, precision),
     // который на ESP32 может давать ambiguous overload.
     StringN<Capacity> raw;
@@ -289,7 +289,7 @@ public:
     WidgetBuilder& number(const char* key, int value);
     WidgetBuilder& number(const char* key, int32_t value);
     WidgetBuilder& number(const char* key, uint32_t value);
-    WidgetBuilder& decimal(const char* key, double value, uint8_t precision = 2, bool trimZeros = true);
+    WidgetBuilder& decimal(const char* key, float value, uint8_t precision = 2, bool trimZeros = true);
     WidgetBuilder& flag(const char* key, bool value, bool useOnOff = false);
     WidgetBuilder& hex(const char* key, uint32_t value, bool prefix = true, uint8_t width = 0);
     WidgetBuilder& bytes(const char* key, const uint8_t* data, size_t length, char separator = ' ');
@@ -320,6 +320,7 @@ public:
     WidgetBuilder& label(const char* value);
     WidgetBuilder& label(const __FlashStringHelper* value);
     WidgetBuilder& terminal(uint8_t channel);
+    WidgetBuilder& slot(uint16_t slotIndex);
 
     const TWCommand& build() const;
     const char* c_str() const;
@@ -401,6 +402,44 @@ public:
      * `ui.to(3).badgeStyle("READY", BadgeStyle::Ok);`
      */
     TimberWidgets& to(uint8_t channel);
+
+    /**
+     * Временно выбирает позицию виджета в верхней закрепленной области terminal.
+     * Если Android уже знает такой slot, виджет будет обновлен на месте.
+     * Если такого slot еще нет, Android создаст новую строку.
+     *
+     * Пример:
+     * `ui.to(3).at(0).progress(72, "Battery", 100, "#36C36B", "72%");`
+     * `ui.to(3).at(0).progress(56, "Battery", 100, "#36C36B", "56%");`
+     */
+    TimberWidgets& at(uint16_t slotIndex);
+
+    /**
+     * Выбирает следующий автоматически выдаваемый slot для terminal.
+     * Этот slot запоминается как текущий, поэтому следующий вызов `currentSlot()`
+     * будет обновлять уже его.
+     *
+     * Пример:
+     * `ui.to(3).nextSlot().progress(72, "Battery", 100, "#36C36B", "72%");`
+     */
+    TimberWidgets& nextSlot();
+
+    /**
+     * Отправляет следующий виджет в текущий slot выбранного terminal.
+     * Если для terminal текущий slot еще не создан, автоматически будет выбран новый.
+     *
+     * Пример:
+     * `ui.to(3).currentSlot().progress(56, "Battery", 100, "#36C36B", "56%");`
+     */
+    TimberWidgets& currentSlot();
+
+    /**
+     * Алиас для `currentSlot()`, если удобнее мыслить как "обновить прошлый slot".
+     *
+     * Пример:
+     * `ui.to(3).lastSlot().progress(60, "Battery", 100, "#36C36B", "60%");`
+     */
+    TimberWidgets& lastSlot();
 
     /**
      * Отправляет обычную текстовую строку в выбранный terminal.
@@ -518,9 +557,9 @@ public:
      * `ui.progress(72, "Battery", 100, "#36C36B", "72%");`
      */
     size_t progress(
-        double value,
+        int value,
         const char* label = nullptr,
-        double maxValue = 100.0,
+        int maxValue = 100,
         const char* fill = nullptr,
         const char* display = nullptr
     );
@@ -603,9 +642,9 @@ public:
      * `ui.gauge(72, "CPU", 100, "%", "#36C36B");`
      */
     size_t gauge(
-        double value,
+        float value,
         const char* label = nullptr,
-        double maxValue = 100.0,
+        float maxValue = 100.0f,
         const char* unit = nullptr,
         const char* color = nullptr
     );
@@ -617,11 +656,11 @@ public:
      * `ui.battery(78, "Battery A", 100, true, 4.08);`
      */
     size_t battery(
-        double value,
+        float value,
         const char* label = nullptr,
-        double maxValue = 100.0,
+        float maxValue = 100.0f,
         bool charging = false,
-        double voltage = -1.0
+        float voltage = -1.0f
     );
 
     /**
@@ -797,6 +836,11 @@ private:
     bool _crlf;
     uint8_t _defaultTerminal = 0;
     int16_t _nextTerminalOverride = -1;
+    int32_t _nextSlotOverride = -1;
+    int32_t _currentSlotByTerminal[4] = {-1, -1, -1, -1};
+    uint16_t _nextAutoSlotByTerminal[4] = {0, 0, 0, 0};
+    bool _useCurrentSlot = false;
+    bool _useNextSlot = false;
     TWCommand _command;
 
     void begin(const char* type);
@@ -805,11 +849,13 @@ private:
     void appendNumber(const char* key, int value);
     void appendNumber(const char* key, int32_t value);
     void appendNumber(const char* key, uint32_t value);
-    void appendDecimal(const char* key, double value, uint8_t precision = 2, bool trimZeros = true);
+    void appendDecimal(const char* key, float value, uint8_t precision = 2, bool trimZeros = true);
     void appendFlag(const char* key, bool value, bool useOnOff = false);
     void appendHex(const char* key, uint32_t value, bool prefix = true, uint8_t width = 0);
     void appendBytes(const char* key, const uint8_t* data, size_t length, char separator = ' ');
     uint8_t resolveTerminal(int terminal = -1);
+    int32_t resolveSlot(uint8_t terminal, int32_t slotIndex = -1);
+    void clearPendingSlotSelection();
     size_t send();
 };
 
@@ -851,8 +897,8 @@ inline WidgetBuilder panel(const TString& title) {
     return builder;
 }
 
-inline WidgetBuilder progress(double value) {
-    return WidgetBuilder("progress").decimal("value", value);
+inline WidgetBuilder progress(int value) {
+    return WidgetBuilder("progress").number("value", value);
 }
 
 template <typename TLeft, typename TRight>
@@ -901,11 +947,11 @@ inline WidgetBuilder barGroup(const TLabels& labels, const TValues& values) {
     return builder;
 }
 
-inline WidgetBuilder gauge(double value) {
+inline WidgetBuilder gauge(float value) {
     return WidgetBuilder("gauge").decimal("value", value);
 }
 
-inline WidgetBuilder battery(double value) {
+inline WidgetBuilder battery(float value) {
     return WidgetBuilder("battery").decimal("value", value);
 }
 

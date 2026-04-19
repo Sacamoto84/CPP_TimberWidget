@@ -12,6 +12,11 @@ sendTo KEYWORD2
 setTerminal KEYWORD2
 terminal KEYWORD2
 to KEYWORD2
+at KEYWORD2
+nextSlot KEYWORD2
+currentSlot KEYWORD2
+lastSlot KEYWORD2
+slot KEYWORD2
 message KEYWORD2
 clearTerminal KEYWORD2
 sendDemoCommands KEYWORD2

@@ -9,9 +9,9 @@ namespace TimberWidget {
  * `ui.gauge(72, "CPU", 100, "%", "#36C36B");`
  */
 size_t TimberWidgets::gauge(
-    double value,
+    float value,
     const char* label,
-    double maxValue,
+    float maxValue,
     const char* unit,
     const char* color
 ) {

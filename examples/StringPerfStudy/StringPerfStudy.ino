@@ -154,10 +154,10 @@ void printCaseResult(
 
     if (stringNUs < snprintfUs) {
         Serial.print(F("  Faster: StringN, speedup x"));
-        Serial.println((double)snprintfUs / (double)stringNUs, 2);
+        Serial.println((float)snprintfUs / (float)stringNUs, 2);
     } else if (snprintfUs < stringNUs) {
         Serial.print(F("  Faster: snprintf, speedup x"));
-        Serial.println((double)stringNUs / (double)snprintfUs, 2);
+        Serial.println((float)stringNUs / (float)snprintfUs, 2);
     } else {
         Serial.println(F("  Result: tie"));
     }

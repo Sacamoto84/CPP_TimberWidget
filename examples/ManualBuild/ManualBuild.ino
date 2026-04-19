@@ -12,9 +12,10 @@ void setup() {
     ui.clearTerminal();
     ui.message("Boot completed");
     ui.to(3).badgeStyle("READY", BadgeStyle::Ok);
+    ui.to(3).nextSlot().progress(72, "Battery", 100, "#36C36B", "72%");
+    ui.to(3).currentSlot().progress(56, "Battery", 100, "#36C36B", "56%");
 
     ui.panel("Motor 1", "READY", "24.3V 1.8A", "#36C36B", "info");
-    ui.progress(72, "Battery", 100, "#36C36B", "72%");
     ui.switchWidget("Pump enable", true, "Remote mode");
 
     const String8 row1Columns[] = {String8("M1"), String8("READY"), String8("24.3")};

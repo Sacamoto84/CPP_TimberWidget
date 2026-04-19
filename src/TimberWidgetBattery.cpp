@@ -9,18 +9,18 @@ namespace TimberWidget {
  * `ui.battery(78, "Battery A", 100, true, 4.08);`
  */
 size_t TimberWidgets::battery(
-    double value,
+    float value,
     const char* label,
-    double maxValue,
+    float maxValue,
     bool charging,
-    double voltage
+    float voltage
 ) {
     begin("battery");
     appendQuoted("label", label);
     appendDecimal("value", value);
     appendDecimal("max", maxValue);
     appendFlag("charging", charging);
-    if (voltage >= 0.0) appendDecimal("voltage", voltage);
+    if (voltage >= 0.0f) appendDecimal("voltage", voltage);
     return send();
 }
 

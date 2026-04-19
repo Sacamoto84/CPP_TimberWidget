@@ -5,10 +5,11 @@ namespace {
 
 const char* const kDemoCommands[] = {
     "ui type=badge text=\"READY\" st=ok",
+    "@3 ui type=progress label=\"Battery\" value=72 max=100 fill=#36C36B display=\"72%\" slot=0",
+    "@3 ui type=progress label=\"Battery\" value=56 max=100 fill=#36C36B display=\"56%\" slot=0",
     "ui type=dot color=#00E676 size=16 label=\"Link active\"",
     "ui type=image name=info size=40 desc=\"Info icon\"",
     "ui type=panel title=\"Motor 1\" value=READY subtitle=\"24.3V 1.8A\" accent=#36C36B icon=info",
-    "ui type=progress label=\"Battery\" value=72 max=100 fill=#36C36B display=\"72%\"",
     "ui type=2col left=\"Voltage\" right=\"24.3V\"",
     "ui type=table headers=\"Name|State|Temp\" rows=\"M1|READY|24.3;M2|WAIT|22.9;M3|ALARM|91.8\"",
     "ui type=switch label=\"Pump enable\" state=on subtitle=\"Remote mode\"",
@@ -141,7 +142,7 @@ WidgetBuilder& WidgetBuilder::number(const char* key, uint32_t value) {
     return *this;
 }
 
-WidgetBuilder& WidgetBuilder::decimal(const char* key, double value, uint8_t precision, bool trimZeros) {
+WidgetBuilder& WidgetBuilder::decimal(const char* key, float value, uint8_t precision, bool trimZeros) {
     beginToken(key);
     _command.add(Format::decimal(value, precision, trimZeros));
     return *this;
@@ -200,6 +201,10 @@ WidgetBuilder& WidgetBuilder::label(const __FlashStringHelper* value) {
 WidgetBuilder& WidgetBuilder::terminal(uint8_t channel) {
     _terminal = normalizeTerminalChannel(channel);
     return *this;
+}
+
+WidgetBuilder& WidgetBuilder::slot(uint16_t slotIndex) {
+    return number("slot", static_cast<uint32_t>(slotIndex));
 }
 
 const TWCommand& WidgetBuilder::build() const {
@@ -278,16 +283,51 @@ TimberWidgets& TimberWidgets::to(uint8_t channel) {
     return *this;
 }
 
+TimberWidgets& TimberWidgets::at(uint16_t slotIndex) {
+    _nextSlotOverride = static_cast<int32_t>(slotIndex);
+    _useCurrentSlot = false;
+    _useNextSlot = false;
+    return *this;
+}
+
+TimberWidgets& TimberWidgets::nextSlot() {
+    clearPendingSlotSelection();
+    _useNextSlot = true;
+    return *this;
+}
+
+TimberWidgets& TimberWidgets::currentSlot() {
+    clearPendingSlotSelection();
+    _useCurrentSlot = true;
+    return *this;
+}
+
+TimberWidgets& TimberWidgets::lastSlot() {
+    return currentSlot();
+}
+
+void TimberWidgets::clearPendingSlotSelection() {
+    _nextSlotOverride = -1;
+    _useCurrentSlot = false;
+    _useNextSlot = false;
+}
+
 size_t TimberWidgets::message(const char* text, int terminal) {
+    clearPendingSlotSelection();
     return writeTerminalLine(*_output, resolveTerminal(terminal), text, _crlf);
 }
 
 size_t TimberWidgets::message(const __FlashStringHelper* text, int terminal) {
+    clearPendingSlotSelection();
     return writeTerminalLine(*_output, resolveTerminal(terminal), text, _crlf);
 }
 
 size_t TimberWidgets::clearTerminal(int terminal) {
-    return writeTerminalLine(*_output, resolveTerminal(terminal), "clear-terminal", _crlf);
+    clearPendingSlotSelection();
+    const uint8_t resolvedTerminal = resolveTerminal(terminal);
+    _currentSlotByTerminal[resolvedTerminal] = -1;
+    _nextAutoSlotByTerminal[resolvedTerminal] = 0;
+    return writeTerminalLine(*_output, resolvedTerminal, "clear-terminal", _crlf);
 }
 
 const char* TimberWidgets::c_str() const {
@@ -342,7 +382,7 @@ void TimberWidgets::appendNumber(const char* key, uint32_t value) {
     _command.add(value);
 }
 
-void TimberWidgets::appendDecimal(const char* key, double value, uint8_t precision, bool trimZeros) {
+void TimberWidgets::appendDecimal(const char* key, float value, uint8_t precision, bool trimZeros) {
     if (!key || !*key) return;
     _command.add(' ');
     _command.add(key);
@@ -391,8 +431,45 @@ uint8_t TimberWidgets::resolveTerminal(int terminal) {
     return resolved;
 }
 
+int32_t TimberWidgets::resolveSlot(uint8_t terminal, int32_t slotIndex) {
+    int32_t resolved = slotIndex;
+
+    if (_nextSlotOverride >= 0) {
+        resolved = _nextSlotOverride;
+        clearPendingSlotSelection();
+    } else if (_useNextSlot) {
+        resolved = static_cast<int32_t>(_nextAutoSlotByTerminal[terminal]++);
+        _currentSlotByTerminal[terminal] = resolved;
+        clearPendingSlotSelection();
+        return resolved;
+    } else if (_useCurrentSlot) {
+        if (_currentSlotByTerminal[terminal] < 0) {
+            resolved = static_cast<int32_t>(_nextAutoSlotByTerminal[terminal]++);
+            _currentSlotByTerminal[terminal] = resolved;
+        } else {
+            resolved = _currentSlotByTerminal[terminal];
+        }
+        clearPendingSlotSelection();
+        return resolved;
+    }
+
+    if (resolved < 0) return -1;
+
+    _currentSlotByTerminal[terminal] = resolved;
+    const uint16_t nextFreeSlot = static_cast<uint16_t>(resolved + 1);
+    if (_nextAutoSlotByTerminal[terminal] < nextFreeSlot) {
+        _nextAutoSlotByTerminal[terminal] = nextFreeSlot;
+    }
+    return resolved;
+}
+
 size_t TimberWidgets::send() {
-    return writeTerminalLine(*_output, resolveTerminal(), _command.c_str(), _crlf);
+    const uint8_t terminal = resolveTerminal();
+    const int32_t slotIndex = resolveSlot(terminal);
+    if (slotIndex >= 0) {
+        appendNumber("slot", slotIndex);
+    }
+    return writeTerminalLine(*_output, terminal, _command.c_str(), _crlf);
 }
 
 size_t demoCommandCount() {
