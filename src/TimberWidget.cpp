@@ -35,7 +35,7 @@ const char* const kDemoCommands[] = {
 
 uint8_t normalizeTerminalChannel(int channel) {
     if (channel < 0) return 0;
-    if (channel > 3) return 3;
+    if (channel > kMaxTerminalChannel) return kMaxTerminalChannel;
     return static_cast<uint8_t>(channel);
 }
 
@@ -48,30 +48,20 @@ size_t writeTerminalPrefix(Print& output, uint8_t channel) {
     return written;
 }
 
+size_t writeLineEnd(Print& output, bool crlf) {
+    return crlf ? output.print("\r\n") : output.println();
+}
+
 size_t writeTerminalLine(Print& output, uint8_t channel, const char* text, bool crlf) {
     size_t written = writeTerminalPrefix(output, channel);
     written += output.print(text ? text : "");
-
-    if (crlf) {
-        written += output.print("\r\n");
-    } else {
-        written += output.println();
-    }
-
-    return written;
+    return written + writeLineEnd(output, crlf);
 }
 
 size_t writeTerminalLine(Print& output, uint8_t channel, const __FlashStringHelper* text, bool crlf) {
     size_t written = writeTerminalPrefix(output, channel);
     written += output.print(text);
-
-    if (crlf) {
-        written += output.print("\r\n");
-    } else {
-        written += output.println();
-    }
-
-    return written;
+    return written + writeLineEnd(output, crlf);
 }
 
 }  // namespace
@@ -90,28 +80,28 @@ WidgetBuilder::WidgetBuilder(const char* type, const char* commandName) {
 
 WidgetBuilder& WidgetBuilder::param(const char* key, const char* value) {
     if (!value || !*value) return *this;
-    beginToken(key);
+    if (!beginToken(key)) return *this;
     appendQuoted(value);
     return *this;
 }
 
 WidgetBuilder& WidgetBuilder::param(const char* key, const __FlashStringHelper* value) {
     if (!value) return *this;
-    beginToken(key);
+    if (!beginToken(key)) return *this;
     appendQuoted(value);
     return *this;
 }
 
 WidgetBuilder& WidgetBuilder::raw(const char* key, const char* value) {
     if (!value || !*value) return *this;
-    beginToken(key);
+    if (!beginToken(key)) return *this;
     _command.add(value);
     return *this;
 }
 
 WidgetBuilder& WidgetBuilder::raw(const char* key, const __FlashStringHelper* value) {
     if (!value) return *this;
-    beginToken(key);
+    if (!beginToken(key)) return *this;
     _command.add(value);
     return *this;
 }
@@ -125,45 +115,45 @@ WidgetBuilder& WidgetBuilder::color(const char* key, const __FlashStringHelper* 
 }
 
 WidgetBuilder& WidgetBuilder::number(const char* key, int value) {
-    beginToken(key);
+    if (!beginToken(key)) return *this;
     _command.add(value);
     return *this;
 }
 
 WidgetBuilder& WidgetBuilder::number(const char* key, int32_t value) {
-    beginToken(key);
+    if (!beginToken(key)) return *this;
     _command.add(value);
     return *this;
 }
 
 WidgetBuilder& WidgetBuilder::number(const char* key, uint32_t value) {
-    beginToken(key);
+    if (!beginToken(key)) return *this;
     _command.add(value);
     return *this;
 }
 
 WidgetBuilder& WidgetBuilder::decimal(const char* key, float value, uint8_t precision, bool trimZeros) {
-    beginToken(key);
+    if (!beginToken(key)) return *this;
     _command.add(Format::decimal(value, precision, trimZeros));
     return *this;
 }
 
 WidgetBuilder& WidgetBuilder::flag(const char* key, bool value, bool useOnOff) {
-    beginToken(key);
+    if (!beginToken(key)) return *this;
     _command.add(useOnOff ? (value ? "on" : "off") : (value ? "true" : "false"));
     return *this;
 }
 
 WidgetBuilder& WidgetBuilder::hex(const char* key, uint32_t value, bool prefix, uint8_t width) {
-    beginToken(key);
+    if (!beginToken(key)) return *this;
     _command.add(Format::hex(value, prefix, width));
     return *this;
 }
 
 WidgetBuilder& WidgetBuilder::bytes(const char* key, const uint8_t* data, size_t length, char separator) {
     if (!data || !length) return *this;
+    if (!beginToken(key)) return *this;
 
-    beginToken(key);
     _command.add('"');
     for (size_t index = 0; index < length; ++index) {
         if (index) _command.add(separator);
@@ -237,11 +227,12 @@ size_t WidgetBuilder::sendTo(Print& output, bool newline, bool crlf) const {
     return writeTerminalLine(output, normalizeTerminalChannel(_terminal), _command.c_str(), crlf);
 }
 
-void WidgetBuilder::beginToken(const char* key) {
-    if (!key || !*key) return;
+bool WidgetBuilder::beginToken(const char* key) {
+    if (!key || !*key) return false;
     _command.add(' ');
     _command.add(key);
     _command.add('=');
+    return true;
 }
 
 void WidgetBuilder::appendQuoted(const char* value) {
@@ -340,53 +331,45 @@ void TimberWidgets::begin(const char* type) {
     if (type) _command.add(type);
 }
 
-void TimberWidgets::appendRaw(const char* key, const char* value) {
-    if (!key || !*key || !value || !*value) return;
+bool TimberWidgets::beginKey(const char* key) {
+    if (!key || !*key) return false;
     _command.add(' ');
     _command.add(key);
     _command.add('=');
+    return true;
+}
+
+void TimberWidgets::appendRaw(const char* key, const char* value) {
+    if (!value || !*value) return;
+    if (!beginKey(key)) return;
     _command.add(value);
 }
 
 void TimberWidgets::appendQuoted(const char* key, const char* value) {
-    if (!key || !*key || !value || !*value) return;
-    _command.add(' ');
-    _command.add(key);
-    _command.add('=');
+    if (!value || !*value) return;
+    if (!beginKey(key)) return;
     _command.add('"');
     detail::addEscaped(_command, value);
     _command.add('"');
 }
 
 void TimberWidgets::appendNumber(const char* key, int value) {
-    if (!key || !*key) return;
-    _command.add(' ');
-    _command.add(key);
-    _command.add('=');
+    if (!beginKey(key)) return;
     _command.add(value);
 }
 
 void TimberWidgets::appendNumber(const char* key, int32_t value) {
-    if (!key || !*key) return;
-    _command.add(' ');
-    _command.add(key);
-    _command.add('=');
+    if (!beginKey(key)) return;
     _command.add(value);
 }
 
 void TimberWidgets::appendNumber(const char* key, uint32_t value) {
-    if (!key || !*key) return;
-    _command.add(' ');
-    _command.add(key);
-    _command.add('=');
+    if (!beginKey(key)) return;
     _command.add(value);
 }
 
 void TimberWidgets::appendDecimal(const char* key, float value, uint8_t precision, bool trimZeros) {
-    if (!key || !*key) return;
-    _command.add(' ');
-    _command.add(key);
-    _command.add('=');
+    if (!beginKey(key)) return;
     _command.add(Format::decimal(value, precision, trimZeros));
 }
 
@@ -395,18 +378,13 @@ void TimberWidgets::appendFlag(const char* key, bool value, bool useOnOff) {
 }
 
 void TimberWidgets::appendHex(const char* key, uint32_t value, bool prefix, uint8_t width) {
-    if (!key || !*key) return;
-    _command.add(' ');
-    _command.add(key);
-    _command.add('=');
+    if (!beginKey(key)) return;
     _command.add(Format::hex(value, prefix, width));
 }
 
 void TimberWidgets::appendBytes(const char* key, const uint8_t* data, size_t length, char separator) {
-    if (!key || !*key || !data || !length) return;
-    _command.add(' ');
-    _command.add(key);
-    _command.add('=');
+    if (!data || !length) return;
+    if (!beginKey(key)) return;
     _command.add('"');
     for (size_t index = 0; index < length; ++index) {
         if (index) _command.add(separator);
@@ -483,14 +461,11 @@ const char* demoCommand(size_t index) {
 
 size_t sendDemoCommands(Print& output, bool crlf, uint16_t delayMs) {
     size_t written = 0;
-    for (size_t index = 0; index < demoCommandCount(); ++index) {
-        if (crlf) {
-            written += output.print(kDemoCommands[index]);
-            written += output.print("\r\n");
-        } else {
-            written += output.println(kDemoCommands[index]);
-        }
-        if (delayMs > 0 && index + 1 < demoCommandCount()) {
+    const size_t count = demoCommandCount();
+    for (size_t index = 0; index < count; ++index) {
+        written += output.print(kDemoCommands[index]);
+        written += writeLineEnd(output, crlf);
+        if (delayMs > 0 && index + 1 < count) {
             delay(delayMs);
         }
     }

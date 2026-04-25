@@ -10,6 +10,13 @@ using TWText = StringN<128>;
 using TWData = StringN<256>;
 
 /**
+ * Максимальное количество терминалов, которые обслуживает Android-приложение Timber.
+ * Каналы нумеруются от 0 до `kMaxTerminals - 1`. Канал 0 выводится без префикса `@`.
+ */
+static constexpr uint8_t kMaxTerminals = 4;
+static constexpr uint8_t kMaxTerminalChannel = kMaxTerminals - 1;
+
+/**
  * Набор канонических стилевых пресетов для badge на стороне Android.
  *
  * Соответствие Android-стилям:
@@ -156,6 +163,17 @@ inline StringN<Capacity> decimal(float value, uint8_t precision = 2, bool trimZe
     uint16_t length = raw.length();
     const char* text = raw.c_str();
 
+    // Обрезать хвостовые нули можно только после десятичной точки.
+    // Иначе, например, 10.0 с precision=0 превратится в "1", а 0.0 — в "".
+    bool hasDot = false;
+    for (uint16_t index = 0; index < length; ++index) {
+        if (text[index] == '.') {
+            hasDot = true;
+            break;
+        }
+    }
+    if (!hasDot) return raw;
+
     while (length && text[length - 1] == '0') {
         --length;
     }
@@ -296,9 +314,9 @@ public:
 
     template <typename TString>
     WidgetBuilder& list(const char* key, const TString* values, size_t count, char separator = '|') {
-        if (!key || !values || !count) return *this;
+        if (!values || !count) return *this;
+        if (!beginToken(key)) return *this;
 
-        beginToken(key);
         _command.add('"');
         for (size_t index = 0; index < count; ++index) {
             if (index) _command.add(separator);
@@ -334,7 +352,7 @@ private:
     TWCommand _command;
     int16_t _terminal = -1;
 
-    void beginToken(const char* key);
+    bool beginToken(const char* key);
     void appendQuoted(const char* value);
     void appendQuoted(const __FlashStringHelper* value);
 };
@@ -837,13 +855,14 @@ private:
     uint8_t _defaultTerminal = 0;
     int16_t _nextTerminalOverride = -1;
     int32_t _nextSlotOverride = -1;
-    int32_t _currentSlotByTerminal[4] = {-1, -1, -1, -1};
-    uint16_t _nextAutoSlotByTerminal[4] = {0, 0, 0, 0};
+    int32_t _currentSlotByTerminal[kMaxTerminals] = {-1, -1, -1, -1};
+    uint16_t _nextAutoSlotByTerminal[kMaxTerminals] = {0, 0, 0, 0};
     bool _useCurrentSlot = false;
     bool _useNextSlot = false;
     TWCommand _command;
 
     void begin(const char* type);
+    bool beginKey(const char* key);
     void appendRaw(const char* key, const char* value);
     void appendQuoted(const char* key, const char* value);
     void appendNumber(const char* key, int value);
