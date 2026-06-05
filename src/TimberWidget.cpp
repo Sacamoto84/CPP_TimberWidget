@@ -154,13 +154,13 @@ WidgetBuilder& WidgetBuilder::bytes(const char* key, const uint8_t* data, size_t
     if (!data || !length) return *this;
     if (!beginToken(key)) return *this;
 
-    _command.add('"');
+    _command.add(_quote);
     for (size_t index = 0; index < length; ++index) {
         if (index) _command.add(separator);
         if (data[index] < 0x10) _command.add('0');
         _command.add(static_cast<unsigned long>(data[index]), 16);
     }
-    _command.add('"');
+    _command.add(_quote);
     return *this;
 }
 
@@ -236,19 +236,24 @@ bool WidgetBuilder::beginToken(const char* key) {
 }
 
 void WidgetBuilder::appendQuoted(const char* value) {
-    _command.add('"');
-    detail::addEscaped(_command, value);
-    _command.add('"');
+    _command.add(_quote);
+    detail::addEscaped(_command, value, _quote);
+    _command.add(_quote);
 }
 
 void WidgetBuilder::appendQuoted(const __FlashStringHelper* value) {
-    _command.add('"');
-    detail::addEscaped(_command, value);
-    _command.add('"');
+    _command.add(_quote);
+    detail::addEscaped(_command, value, _quote);
+    _command.add(_quote);
 }
 
 TimberWidgets::TimberWidgets(Print& output, bool crlf)
     : _output(&output), _crlf(crlf) {}
+
+TimberWidgets& TimberWidgets::setQuoteChar(char quote) {
+    _quote = quote;
+    return *this;
+}
 
 TimberWidgets& TimberWidgets::setOutput(Print& output) {
     _output = &output;
@@ -348,9 +353,9 @@ void TimberWidgets::appendRaw(const char* key, const char* value) {
 void TimberWidgets::appendQuoted(const char* key, const char* value) {
     if (!value || !*value) return;
     if (!beginKey(key)) return;
-    _command.add('"');
-    detail::addEscaped(_command, value);
-    _command.add('"');
+    _command.add(_quote);
+    detail::addEscaped(_command, value, _quote);
+    _command.add(_quote);
 }
 
 void TimberWidgets::appendNumber(const char* key, int value) {
@@ -385,13 +390,13 @@ void TimberWidgets::appendHex(const char* key, uint32_t value, bool prefix, uint
 void TimberWidgets::appendBytes(const char* key, const uint8_t* data, size_t length, char separator) {
     if (!data || !length) return;
     if (!beginKey(key)) return;
-    _command.add('"');
+    _command.add(_quote);
     for (size_t index = 0; index < length; ++index) {
         if (index) _command.add(separator);
         if (data[index] < 0x10) _command.add('0');
         _command.add(static_cast<unsigned long>(data[index]), 16);
     }
-    _command.add('"');
+    _command.add(_quote);
 }
 
 uint8_t TimberWidgets::resolveTerminal(int terminal) {

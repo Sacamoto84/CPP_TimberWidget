@@ -51,13 +51,18 @@ const char* badgeStyleName(BadgeStyle style);
 
 namespace detail {
 
+// Символ-обёртка значения по умолчанию. Парсер на стороне терминала/Android
+// понимает три вида кавычек: ", ' и backtick `. Backtick удобен тем, что его
+// не нужно экранировать в C++-строках. По умолчанию для совместимости — ".
+static constexpr char kDefaultQuote = '"';
+
 template <uint16_t Capacity>
-inline void addEscaped(StringN<Capacity>& out, const char* value) {
+inline void addEscaped(StringN<Capacity>& out, const char* value, char quote = kDefaultQuote) {
     if (!value) return;
 
     while (*value) {
         const char symbol = *value++;
-        if (symbol == '\\' || symbol == '"') {
+        if (symbol == '\\' || symbol == quote) {
             out.add('\\');
         }
         out.add(symbol);
@@ -65,14 +70,14 @@ inline void addEscaped(StringN<Capacity>& out, const char* value) {
 }
 
 template <uint16_t Capacity>
-inline void addEscaped(StringN<Capacity>& out, const __FlashStringHelper* value) {
+inline void addEscaped(StringN<Capacity>& out, const __FlashStringHelper* value, char quote = kDefaultQuote) {
     if (!value) return;
 
     PGM_P pointer = reinterpret_cast<PGM_P>(value);
     while (true) {
         const char symbol = static_cast<char>(pgm_read_byte(pointer++));
         if (!symbol) break;
-        if (symbol == '\\' || symbol == '"') {
+        if (symbol == '\\' || symbol == quote) {
             out.add('\\');
         }
         out.add(symbol);
@@ -107,11 +112,11 @@ inline StringN<Capacity> escape(const __FlashStringHelper* value) {
  * Оборачивает строку в кавычки и экранирует спецсимволы.
  */
 template <uint16_t Capacity = 128>
-inline StringN<Capacity> quote(const char* value) {
+inline StringN<Capacity> quote(const char* value, char q = detail::kDefaultQuote) {
     StringN<Capacity> out;
-    out.add('"');
-    detail::addEscaped(out, value);
-    out.add('"');
+    out.add(q);
+    detail::addEscaped(out, value, q);
+    out.add(q);
     return out;
 }
 
@@ -119,11 +124,11 @@ inline StringN<Capacity> quote(const char* value) {
  * Оборачивает F-строку в кавычки и экранирует спецсимволы.
  */
 template <uint16_t Capacity = 128>
-inline StringN<Capacity> quote(const __FlashStringHelper* value) {
+inline StringN<Capacity> quote(const __FlashStringHelper* value, char q = detail::kDefaultQuote) {
     StringN<Capacity> out;
-    out.add('"');
-    detail::addEscaped(out, value);
-    out.add('"');
+    out.add(q);
+    detail::addEscaped(out, value, q);
+    out.add(q);
     return out;
 }
 
@@ -312,17 +317,21 @@ public:
     WidgetBuilder& hex(const char* key, uint32_t value, bool prefix = true, uint8_t width = 0);
     WidgetBuilder& bytes(const char* key, const uint8_t* data, size_t length, char separator = ' ');
 
+    // Символ-обёртка для строковых значений: " (умолч.), ' или backtick `.
+    WidgetBuilder& setQuoteChar(char quote) { _quote = quote; return *this; }
+    char quoteChar() const { return _quote; }
+
     template <typename TString>
     WidgetBuilder& list(const char* key, const TString* values, size_t count, char separator = '|') {
         if (!values || !count) return *this;
         if (!beginToken(key)) return *this;
 
-        _command.add('"');
+        _command.add(_quote);
         for (size_t index = 0; index < count; ++index) {
             if (index) _command.add(separator);
             _command.add(values[index]);
         }
-        _command.add('"');
+        _command.add(_quote);
         return *this;
     }
 
@@ -351,6 +360,7 @@ public:
 private:
     TWCommand _command;
     int16_t _terminal = -1;
+    char _quote = detail::kDefaultQuote;
 
     bool beginToken(const char* key);
     void appendQuoted(const char* value);
@@ -395,6 +405,16 @@ public:
      * `ui.setCrlf(true);`
      */
     TimberWidgets& setCrlf(bool enabled);
+
+    /**
+     * Выбирает символ-обёртку для строковых значений: " (умолч.), ' или
+     * backtick `. Backtick не нужно экранировать в C++-строках, поэтому
+     * команды в коде получаются короче и читаемее.
+     *
+     * Пример:
+     * `ui.setQuoteChar('`');`
+     */
+    TimberWidgets& setQuoteChar(char quote);
 
     /**
      * Выбирает terminal по умолчанию для всех следующих отправок.
@@ -852,6 +872,7 @@ public:
 private:
     Print* _output;
     bool _crlf;
+    char _quote = detail::kDefaultQuote;
     uint8_t _defaultTerminal = 0;
     int16_t _nextTerminalOverride = -1;
     int32_t _nextSlotOverride = -1;
